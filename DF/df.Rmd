@@ -1,0 +1,145 @@
+---
+title: "Untitled"
+author: "Christopher Soria"
+date: "2023-07-25"
+output: html_document
+---
+
+```{r}
+library(data.table)
+library(dplyr)
+library(tidyverse)
+library(car)
+```
+
+50 variables in lucid but 62 in lucid-pipeline
+```{r}
+df_all_waves <- readRDS("/Users/chrissoria/documents/research/BICs/bics-data/data/lucid-pipeline/df_all_waves.rds")
+df_all_waves2 <- readRDS("/Users/chrissoria/documents/research/BICs/bics-data/data/lucid/df_all_waves.rds")
+```
+I don't see all the variables here?
+```{r}
+colnames(df_all_waves)
+```
+
+
+```{r}
+setdiff(names(df_all_waves), names(df_all_waves2))
+```
+So many NA's?
+```{r}
+table(df_all_waves$political_view, useNA = "always")
+```
+```{r}
+df_w1 <- readRDS("/Users/chrissoria/documents/research/BICs/bics-data/data/lucid-pipeline/national_wave1_unweighted.rds")
+df_w3 <- readRDS("/Users/chrissoria/documents/research/BICs/bics-data/data/lucid-pipeline/national_wave3_unweighted.rds")
+df_w6 <- readRDS("/Users/chrissoria/documents/research/BICs/bics-data/data/lucid-pipeline/national_wave6_unweighted.rds")
+df_w2 <- readRDS("/Users/chrissoria/documents/research/BICs/bics-data/data/lucid-pipeline/national_wave2_unweighted.rds")
+df_w4 <- readRDS("/Users/chrissoria/documents/research/BICs/bics-data/data/lucid-pipeline/national_wave4_unweighted.rds")
+df_w5 <- readRDS("/Users/chrissoria/documents/research/BICs/bics-data/data/lucid-pipeline/national_wave5_unweighted.rds")
+df_w1$wave <- 1
+df_w2$wave <- 2
+df_w3$wave <- 3
+df_w4$wave <- 4
+df_w5$wave <- 5
+df_w6$wave <- 6
+```
+Can't use w1 because lots of NA for political view?
+marketplace you can target specific subgroups
+just want a nationally representative sample, use theoreum plus standard set of questions from 
+I'm seeing some variables in some waves but not in others?
+
+```{r}
+# Check and convert if column exists in df_w2
+if ("resp_employ" %in% colnames(df_w1)) {
+  df_w1$resp_employ <- as.character(df_w1$resp_employ)
+}
+
+if ("resp_employ" %in% colnames(df_w2)) {
+  df_w2$resp_employ <- as.character(df_w2$resp_employ)
+}
+
+if ("resp_employ" %in% colnames(df_w3)) {
+  df_w3$resp_employ <- as.character(df_w3$resp_employ)
+}
+
+# Check and convert if column exists in df_w4
+if ("resp_employ" %in% colnames(df_w4)) {
+  df_w4$resp_employ <- as.character(df_w4$resp_employ)
+}
+
+if ("resp_employ" %in% colnames(df_w5)) {
+  df_w5$resp_employ <- as.character(df_w5$resp_employ)
+}
+
+# Check and convert if column exists in df_w6
+if ("resp_employ" %in% colnames(df_w6)) {
+  df_w6$resp_employ <- as.character(df_w6$resp_employ)
+}
+
+```
+
+```{r}
+df_w2$resp_occupation <- as.character(df_w2$resp_occupation)
+df_w3$resp_occupation <- as.character(df_w3$resp_occupation)
+df_w4$resp_occupation <- as.character(df_w4$resp_occupation)
+df_w5$resp_occupation <- as.character(df_w5$resp_occupation)
+
+df_combined <- dplyr::bind_rows(df_w2, df_w3, df_w4, df_w5, df_w6)
+write.csv(df_combined, file = "df_combined.csv", row.names = FALSE)
+```
+
+```{r}
+# Defining the mapping
+political_view_mapping <- c('Extremely conservative' = 1,
+                            'Slightly conservative' = 2,
+                            'Moderate' = 3,
+                            'Middle of the road' = 3,
+                            'Slightly liberal' = 4,
+                            'Liberal' = 5,
+                            'Extremely liberal' = 6)
+
+# Creating a new variable 'political_view_numeric' by mapping the 'political_view' column using the defined mapping
+df_combined$political_view_numeric <- dplyr::recode(df_combined$political_view, !!!political_view_mapping)
+```
+
+```{r}
+df_combined %>%
+  group_by(wave) %>%
+  summarise(avg_political_view = mean(political_view_numeric, na.rm = TRUE))
+
+
+```
+
+political view gets more liberal over time between wave 1 - 6
+conservatives dropped out? 
+```{r}
+df_combined$wave <- as.factor(df_combined$wave)
+
+df_list <- split(df_combined, df_combined$wave)
+
+plots <- lapply(df_list, function(df) {
+  df$political_view_numeric <- as.factor(df$political_view_numeric)
+  total <- nrow(df)
+  
+  df_percent <- df %>%
+    group_by(political_view_numeric) %>%
+    summarise(count = n()) %>%
+    mutate(percentage = count / total * 100)
+  
+  ggplot(df_percent, aes(x = political_view_numeric, y = percentage)) +
+    geom_bar(stat = "identity") +
+    ylab("Percentage") +
+    ggtitle(paste0("Wave ", unique(df$wave)))
+})
+
+# Plotting the plots
+gridExtra::grid.arrange(grobs = plots)
+
+# Check homogeneity of variances
+leveneTest(political_view_numeric ~ wave, data = df_combined)
+```
+```{r}
+write.csv(df_combined, file = "df_combined.csv", row.names = FALSE)
+```
+
