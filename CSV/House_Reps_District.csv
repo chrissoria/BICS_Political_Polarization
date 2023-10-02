@@ -313,7 +313,7 @@ Name,State,District,Party,Years_Served,FIPS_Code,CD
 "Phillips, Dean",Minnesota,03,Democratic,House: 2019-Present,27,2703
 "Pingree, Chellie",Maine,01,Democratic,House: 2009-Present,23,2301
 "Pocan, Mark",Wisconsin,02,Democratic,House: 2013-Present,55,5502
-"Porter, Katie",California,47,Democratic,House: 2019-Present,06,0647
+"Porter, Katie",California,45,Democratic,House: 2019-Present,06,0645
 "Posey, Bill",Florida,08,Republican,House: 2009-Present,12,1208
 "Pressley, Ayanna",Massachusetts,07,Democratic,House: 2019-Present,25,2507
 "Price, David E.",North Carolina,04,Democratic,"House: 1987-1995, 1997-2023",37,3704
@@ -436,4 +436,6 @@ Name,State,District,Party,Years_Served,FIPS_Code,CD
 "Yoho, Ted S.",Florida,03,Republican,House: 2013-2021,12,1203
 "Young, Don",Alaska,00,Republican,House: 1973-2022,02,0200
 "Zeldin, Lee M.",New York,01,Republican,House: 2015-2023,36,3601
-Jenniffer González-Colón,Puerto Rico,00,Republican,Resident Commissioner: 2017-Present,72,7200
+"González-Colón, Jenniffer",Puerto Rico,00,Republican,Resident Commissioner: 2017-Present,72,7200
+"Nadler, Jerry",New York,10,Democratic,House: 2013-2023,72,3610
+"Welch, Peter",Vermont,00,Democratic,House: 2006-2020,50,5000
