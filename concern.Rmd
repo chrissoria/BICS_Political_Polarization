@@ -13,6 +13,10 @@ library(dplyr)
 
 ```{r}
 df <- fread('data/BICS_ZIP_Features.csv')
+
+df$political_view <- as.factor(df$political_view)
+df$political_view <- relevel(df$political_view, ref = "Middle / Moderate")
+
 head(df)
 ```
 ```{r}

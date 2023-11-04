@@ -122,4 +122,59 @@ combined_plot <- cowplot::plot_grid(plotlist = plots, align = 'h')
 # Print the combined plot
 print(combined_plot)
 ```
+```{r}
+model_list <- df %>%
+  group_by(wave) %>%
+  group_split() %>%
+  lapply(function(data) lm(num_cc_nonhh ~ political_party + political_view + State_Government_Response_Index_11192020 + COV_County_CMR_2020_06_20 + resp_sex + educ_group + resp_yob + r_working + resp_hispanic + r_race, data = data))
+
+model_summaries <- lapply(model_list, summary)
+
+# wave 2
+print(model_summaries[[1]])
+
+# wave 4
+print(model_summaries[[2]])
+
+# wave 6
+print(model_summaries[[3]])
+```
+
+The political view variable is not doing well (need to talk to Ayesha and Dennis about this)
+However, we can see that the Republican versus Democrat difference always shows that Republicans are less likely to practice safety precautions after wave 2. In other words, by the end of 2020 Republicans were less likely than Democrats to wear masks, use gloves, and other protective equipment. In Mid 2020 they were MORE likely. 
+```{r}
+model_list <- df %>%
+  group_by(wave) %>%
+  group_split() %>%
+  lapply(function(data) lm(Non_Weighted_Safety_Index ~ political_party + political_view + State_Government_Response_Index_11192020 + COV_County_CMR_2020_06_20 + resp_sex + educ_group + resp_yob + r_working + resp_hispanic + r_race, data = data))
+
+model_summaries <- lapply(model_list, summary)
+
+# wave 2
+print(model_summaries[[1]])
+
+# wave 4
+print(model_summaries[[2]])
+
+# wave 6
+print(model_summaries[[3]])
+```
+
+```{r}
+model_list <- df %>%
+  group_by(wave) %>%
+  group_split() %>%
+  lapply(function(data) lm(Norm_Masks_Used ~ political_party_to_CD + State_Government_Response_Index_11192020 + COV_County_CMR_2020_06_20 + resp_sex + educ_group + resp_yob + r_working + resp_hispanic + r_race, data = data))
+
+model_summaries <- lapply(model_list, summary)
+
+# wave 2
+print(model_summaries[[1]])
+
+# wave 4
+print(model_summaries[[2]])
+
+# wave 6
+print(model_summaries[[3]])
+```
 
