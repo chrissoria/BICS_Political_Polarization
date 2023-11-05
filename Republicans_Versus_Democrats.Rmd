@@ -1,0 +1,46 @@
+---
+title: "Republicans versus Democrats"
+author: "Christopher Soria"
+date: "2023-11-04"
+output: html_document
+---
+```{r}
+library(data.table)
+library(tidyverse)
+library(dplyr)
+```
+```{r}
+library(tidyverse)
+library(data.table)
+library(dplyr)
+```
+
+```{r}
+df <- fread("/Users/chrissoria/Documents/Research/BICS_Political_Polarization/data/BICS_ZIP_Features.csv")
+```
+
+Republicans are less likely to reduce contact, according to what they say
+```{r}
+rvd_contact_reduction_model <- glm(contact_reduction ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + political_party, data = df, family = binomial)
+
+# View the model summary
+summary(rvd_contact_reduction_model)
+rm(rvd_contact_reduction_model)
+```
+Republicans are less concerned about the spread of the virus
+```{r}
+rvd_concern_model <- glm(binary_concern_strong ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + political_party, data = df, family = binomial)
+
+# View the model summary
+summary(rvd_concern_model)
+rm(rvd_concern_model)
+```
+And Republicans also reported 11% more contacts
+```{r}
+rvd_contact_model <- lm(Contacts ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + political_party, data = df)
+
+# View the model summary
+summary(rvd_contact_model)
+rm(rvd_contact_model)
+```
+
