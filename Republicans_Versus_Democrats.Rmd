@@ -9,11 +9,6 @@ library(data.table)
 library(tidyverse)
 library(dplyr)
 ```
-```{r}
-library(tidyverse)
-library(data.table)
-library(dplyr)
-```
 
 ```{r}
 df <- fread("/Users/chrissoria/Documents/Research/BICS_Political_Polarization/data/BICS_ZIP_Features.csv")
@@ -21,7 +16,7 @@ df <- fread("/Users/chrissoria/Documents/Research/BICS_Political_Polarization/da
 
 Republicans are less likely to reduce contact, according to what they say
 ```{r}
-rvd_contact_reduction_model <- glm(contact_reduction ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + political_party, data = df, family = binomial)
+rvd_contact_reduction_model <- glm(contact_reduction ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party, data = df, family = binomial)
 
 # View the model summary
 summary(rvd_contact_reduction_model)
@@ -29,18 +24,34 @@ rm(rvd_contact_reduction_model)
 ```
 Republicans are less concerned about the spread of the virus
 ```{r}
-rvd_concern_model <- glm(binary_concern_strong ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + political_party, data = df, family = binomial)
+rvd_concern_model <- glm(binary_concern_strong ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party, data = df, family = binomial)
 
 # View the model summary
 summary(rvd_concern_model)
 rm(rvd_concern_model)
 ```
-And Republicans also reported 11% more contacts
+And Republicans also reported 9% more contacts
 ```{r}
-rvd_contact_model <- lm(Contacts ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + political_party, data = df)
+rvd_contact_model <- lm(Contacts ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party, data = df)
 
 # View the model summary
 summary(rvd_contact_model)
 rm(rvd_contact_model)
+```
+Republicans are less likely to wear masks
+```{r}
+rvd_masked_contact_model <- lm(Norm_Masks_Used ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party, data = df)
+
+# View the model summary
+summary(rvd_masked_contact_model)
+rm(rvd_masked_contact_model)
+```
+Overall, Republicans are less safe in their contacts
+```{r}
+rvd_safety_model <- lm(Non_Weighted_Safety_Index ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party, data = df)
+
+# View the model summary
+summary(rvd_safety_model)
+rm(rvd_safety_model)
 ```
 
