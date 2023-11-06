@@ -1,0 +1,59 @@
+---
+title: "Republicans in Democratic CDs"
+author: "Christopher Soria"
+date: "2023-11-04"
+output: html_document
+---
+```{r}
+library(data.table)
+library(tidyverse)
+library(dplyr)
+```
+
+```{r}
+df <- fread("/Users/chrissoria/Documents/Research/BICS_Political_Polarization/data/BICS_ZIP_Features.csv")
+RD_df <- df[df$political_party %in% c("Republican", "Democrat"), ]
+```
+
+
+The closer to republicanisn
+```{r}
+dvr_contact_reduction_model <- glm(contact_reduction ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party_to_CD, data = df, family = binomial)
+
+# View the model summary
+summary(dvr_contact_reduction_model)
+rm(dvr_contact_reduction_model)
+```
+Being in an opposing party CD means less likely to be concerened about the spread of the virus
+```{r}
+dvr_concern_model <- glm(binary_concern_strong ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party_to_CD, data = df, family = binomial)
+
+# View the model summary
+summary(dvr_concern_model)
+rm(dvr_concern_model)
+```
+However, being in an opposing CD doesn't mean you're less likely to report contact
+```{r}
+opp_contact_model <- lm(Contacts ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party_to_CD, data = df)
+
+# View the model summary
+summary(opp_contact_model)
+rm(opp_contact_model)
+```
+being in an opposing cd means you're less likely to wear masks
+```{r}
+opp_masked_contact_model <- lm(Norm_Masks_Used ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party_to_CD, data = df)
+
+# View the model summary
+summary(opp_masked_contact_model)
+rm(opp_masked_contact_model)
+```
+Overall, they're less likely to be safe in their contacts
+```{r}
+opp_safety_model <- lm(Non_Weighted_Safety_Index ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party_to_CD, data = df)
+
+# View the model summary
+summary(opp_safety_model)
+rm(opp_safety_model)
+```
+

@@ -1,5 +1,5 @@
 ---
-title: "Republicans versus Democrats"
+title: "Opposing Party CD"
 author: "Christopher Soria"
 date: "2023-11-04"
 output: html_document
@@ -12,7 +12,9 @@ library(dplyr)
 
 ```{r}
 df <- fread("/Users/chrissoria/Documents/Research/BICS_Political_Polarization/data/BICS_ZIP_Features.csv")
+RD_df <- df[df$political_party %in% c("Republican", "Democrat"), ]
 ```
+
 
 Being in an opposing party CD means less likely to say there was a reduction in contact
 ```{r}
