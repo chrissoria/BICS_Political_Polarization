@@ -20,8 +20,35 @@ rvd_contact_reduction_model <- glm(contact_reduction ~  COV_County_CMR_2020_06_2
 
 # View the model summary
 summary(rvd_contact_reduction_model)
+
+tidy_model <- broom::tidy(rvd_contact_reduction_model)
+
+coeffs_of_interest <- tidy_model %>% 
+  filter(term %in% c("political_partyIndependent", "political_partyRepublican")) %>%
+  mutate(odds_ratio = exp(estimate),
+         term = recode(term, 
+                       political_partyIndependent = "Independent", 
+                       political_partyRepublican = "Republican"))
+
+# Plot
+plot1 <- ggplot(coeffs_of_interest, aes(x = term, y = odds_ratio)) +
+  geom_bar(stat = "identity", fill = c("Purple", "Red"), width = 0.7) +
+  geom_errorbar(aes(ymin = exp(estimate - std.error*1.96), 
+                    ymax = exp(estimate + std.error*1.96)), width = 0.3) +
+  scale_y_continuous(labels = scales::comma, 
+                     breaks = scales::pretty_breaks()) +
+  labs(y = "Odds Ratio", x = "Political Affiliation of Person", 
+       title = "Relative Odds of Saying You Have Greatly Reduced Contact As a Result of COVID-19",
+       subtitle = "Reference: Democrats") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+plot1
+
 rm(rvd_contact_reduction_model)
 ```
+
+
 Republicans are less concerned about the spread of the virus
 ```{r}
 rvd_concern_model <- glm(binary_concern_strong ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party, data = df, family = binomial)
@@ -32,7 +59,7 @@ rm(rvd_concern_model)
 ```
 And Republicans also reported 9% more contacts
 ```{r}
-rvd_contact_model <- lm(Contacts ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party, data = df)
+rvd_contact_model <- lm(num_cc_nonhh ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party, data = df)
 
 # View the model summary
 summary(rvd_contact_model)
@@ -53,5 +80,14 @@ rvd_safety_model <- lm(Non_Weighted_Safety_Index ~  COV_County_CMR_2020_06_20 + 
 # View the model summary
 summary(rvd_safety_model)
 rm(rvd_safety_model)
+```
+Democrats and republicans are not more or less likely to get the vaccine at this stage in the pandemic (mid 2021)
+(TRUMP championed the vaccine)
+```{r}
+rvd_vax_model <- glm(as.factor(covid19_vax) ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party, data = df, family = binomial)
+
+# View the model summary
+summary(rvd_vax_model)
+rm(rvd_vax_model)
 ```
 

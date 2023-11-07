@@ -16,7 +16,7 @@ RD_df <- df[df$political_party %in% c("Republican", "Democrat"), ]
 ```
 
 
-The closer to republicanisn
+The closer to republicanisn the less contact reduction
 ```{r}
 dvr_contact_reduction_model <- glm(contact_reduction ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party_to_CD, data = df, family = binomial)
 
@@ -24,7 +24,7 @@ dvr_contact_reduction_model <- glm(contact_reduction ~  COV_County_CMR_2020_06_2
 summary(dvr_contact_reduction_model)
 rm(dvr_contact_reduction_model)
 ```
-Being in an opposing party CD means less likely to be concerened about the spread of the virus
+Republicans generally are less concerned than democrats
 ```{r}
 dvr_concern_model <- glm(binary_concern_strong ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party_to_CD, data = df, family = binomial)
 
@@ -33,27 +33,39 @@ summary(dvr_concern_model)
 rm(dvr_concern_model)
 ```
 However, being in an opposing CD doesn't mean you're less likely to report contact
+Independents are having the most contact
+Democrats are not more or less likely to have contact with people in different settings
 ```{r}
-opp_contact_model <- lm(Contacts ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party_to_CD, data = df)
+dvr_contact_model <- lm(Contacts ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party_to_CD, data = df)
 
 # View the model summary
-summary(opp_contact_model)
-rm(opp_contact_model)
+summary(dvr_contact_model)
+rm(dvr_contact_model)
 ```
-being in an opposing cd means you're less likely to wear masks
+Democrats are less likely to wear masks when they're in Republican districts
+Republicans are more likely to wear masks when they're in Democratic districts
+Suggesting some peer pressure effects based on majority
 ```{r}
-opp_masked_contact_model <- lm(Norm_Masks_Used ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party_to_CD, data = df)
+dvr_masked_contact_model <- lm(Norm_Masks_Used ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party_to_CD, data = df)
 
 # View the model summary
-summary(opp_masked_contact_model)
-rm(opp_masked_contact_model)
+summary(dvr_masked_contact_model)
+rm(dvr_masked_contact_model)
 ```
 Overall, they're less likely to be safe in their contacts
 ```{r}
-opp_safety_model <- lm(Non_Weighted_Safety_Index ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party_to_CD, data = df)
+dvr_safety_model <- lm(Non_Weighted_Safety_Index ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party_to_CD, data = df)
 
 # View the model summary
-summary(opp_safety_model)
-rm(opp_safety_model)
+summary(dvr_safety_model)
+rm(dvr_safety_model)
+```
+
+```{r}
+dvr_vax_model <- glm(as.factor(covid19_vax) ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party_to_CD, data = df, family = binomial)
+
+# View the model summary
+summary(dvr_vax_model)
+rm(dvr_vax_model)
 ```
 
