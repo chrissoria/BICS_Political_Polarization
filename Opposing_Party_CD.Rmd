@@ -56,4 +56,13 @@ opp_safety_model <- lm(Non_Weighted_Safety_Index ~  COV_County_CMR_2020_06_20 + 
 summary(opp_safety_model)
 rm(opp_safety_model)
 ```
+However, despite republicans and democrats not being more or less likely to get vaccinated
+being in an opposite party means you're less likely to get vaccinated
+```{r}
+opp_vax_model <- glm(as.factor(covid19_vax) ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + In_Opposing_Party_CD, data = df, family = binomial)
+
+# View the model summary
+summary(opp_vax_model)
+rm(opp_vax_model)
+```
 
