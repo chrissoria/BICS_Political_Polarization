@@ -31,19 +31,20 @@ coeffs_of_interest <- tidy_model %>%
                        political_partyRepublican = "Republican"))
 
 # Plot
-plot1 <- ggplot(coeffs_of_interest, aes(x = term, y = odds_ratio)) +
+rvd_contact_reduction_plot <- ggplot(coeffs_of_interest, aes(x = term, y = odds_ratio)) +
   geom_bar(stat = "identity", fill = c("Purple", "Red"), width = 0.7) +
   geom_errorbar(aes(ymin = exp(estimate - std.error*1.96), 
                     ymax = exp(estimate + std.error*1.96)), width = 0.3) +
   scale_y_continuous(labels = scales::comma, 
-                     breaks = scales::pretty_breaks()) +
+                     breaks = scales::pretty_breaks(),
+                     limits = c(NA, 1)) +  # Set the upper limit to 1
   labs(y = "Odds Ratio", x = "Political Affiliation of Person", 
        title = "Relative Odds of Saying You Have Greatly Reduced Contact As a Result of COVID-19",
        subtitle = "Reference: Democrats") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-plot1
+rvd_contact_reduction_plot
 
 rm(rvd_contact_reduction_model)
 ```
@@ -55,14 +56,64 @@ rvd_concern_model <- glm(binary_concern_strong ~  COV_County_CMR_2020_06_20 + St
 
 # View the model summary
 summary(rvd_concern_model)
+
+tidy_model <- broom::tidy(rvd_concern_model)
+
+coeffs_of_interest <- tidy_model %>% 
+  filter(term %in% c("political_partyIndependent", "political_partyRepublican")) %>%
+  mutate(odds_ratio = exp(estimate),
+         term = recode(term, 
+                       political_partyIndependent = "Independent", 
+                       political_partyRepublican = "Republican"))
+
+# Plot
+rvd_concern_plot <- ggplot(coeffs_of_interest, aes(x = term, y = odds_ratio)) +
+  geom_bar(stat = "identity", fill = c("Purple", "Red"), width = 0.7) +
+  geom_errorbar(aes(ymin = exp(estimate - std.error*1.96), 
+                    ymax = exp(estimate + std.error*1.96)), width = 0.3) +
+  scale_y_continuous(labels = scales::comma, 
+                     breaks = scales::pretty_breaks(),
+                     limits = c(NA, 1)) +  # Set the upper limit to 1
+  labs(y = "Odds Ratio", x = "Political Affiliation of Person", 
+       title = "Relative Odds of a Person Saying They're 'Very Concerned' About the Spread of Coronavirus",
+       subtitle = "Reference: Democrats") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+print(rvd_concern_plot)
+
 rm(rvd_concern_model)
 ```
-And Republicans also reported 9% more contacts
+And Republicans also reported 1.2 more contacts on average when asked "How many people who do not live in your household did you have in-person contact with yesterday?"
 ```{r}
 rvd_contact_model <- lm(num_cc_nonhh ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party, data = df)
 
 # View the model summary
 summary(rvd_contact_model)
+
+tidy_model <- broom::tidy(rvd_contact_model)
+
+coeffs_of_interest <- tidy_model %>% 
+  filter(term %in% c("political_partyIndependent", "political_partyRepublican")) %>%
+  mutate(term = recode(term, 
+                       political_partyIndependent = "Independent", 
+                       political_partyRepublican = "Republican"))
+
+# Plot
+rvd_contact_plot <- ggplot(coeffs_of_interest, aes(y = term, x = estimate)) +
+  geom_bar(stat = "identity", fill = c("Purple", "Red"), width = 0.7, orientation = "y") +
+  geom_errorbar(aes(xmin = estimate - std.error*1.96, 
+                    xmax = estimate + std.error*1.96), width = 0.3, orientation = "y") +
+  scale_x_continuous(labels = scales::comma, 
+                     breaks = scales::pretty_breaks()) +
+  labs(x = "Non-Household Contacts", y = "Political Affiliation of Person", 
+       title = "Relative Number of Reported Non-Household Contacts in the Previous Day",
+       subtitle = "Reference: Democrats") +
+  theme_minimal() +
+  theme(axis.text.y = element_text(angle = 45, hjust = 1))
+
+print(rvd_contact_plot)
+
 rm(rvd_contact_model)
 ```
 Republicans are less likely to wear masks
@@ -71,6 +122,30 @@ rvd_masked_contact_model <- lm(Norm_Masks_Used ~  COV_County_CMR_2020_06_20 + St
 
 # View the model summary
 summary(rvd_masked_contact_model)
+
+tidy_model <- broom::tidy(rvd_masked_contact_model)
+
+coeffs_of_interest <- tidy_model %>% 
+  filter(term %in% c("political_partyIndependent", "political_partyRepublican")) %>%
+  mutate(term = recode(term, 
+                       political_partyIndependent = "Independent", 
+                       political_partyRepublican = "Republican"))
+
+# Plot
+rvd_masked_contact_plot <- ggplot(coeffs_of_interest, aes(x = term, y = estimate)) +
+  geom_bar(stat = "identity", fill = c("Purple", "Red"), width = 0.7) +
+  geom_errorbar(aes(ymin = estimate - std.error*1.96, 
+                    ymax = estimate + std.error*1.96), width = 0.3) +
+  scale_y_continuous(labels = scales::comma, 
+                     breaks = scales::pretty_breaks()) +
+  labs(y = "Non-Household Contacts", x = "Political Affiliation of Person", 
+       title = "Relative Difference in Fraction of Contacts Carried Out With a Mask",
+       subtitle = "Reference: Democrats") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+print(rvd_masked_contact_plot)
+
 rm(rvd_masked_contact_model)
 ```
 Overall, Republicans are less safe in their contacts
