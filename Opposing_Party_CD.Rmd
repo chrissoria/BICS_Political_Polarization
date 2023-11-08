@@ -117,10 +117,36 @@ rm(opp_safety_model)
 However, despite republicans and democrats not being more or less likely to get vaccinated
 being in an opposite party means you're less likely to get vaccinated
 ```{r}
-opp_vax_model <- glm(as.factor(covid19_vax) ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + In_Opposing_Party_CD + Independent, data = df, family = binomial)
+opp_vax_model <- glm(Vaccinated ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + In_Opposing_Party_CD + Independent, data = df, family = binomial)
+
+# View the model summary
+tidy_model <- broom::tidy(opp_vax_model)
+
+coeffs_of_interest <- tidy_model %>% 
+  filter(term %in% c("In_Opposing_Party_CD")) %>%
+  mutate(odds_ratio = exp(estimate),
+         term = recode(term, 
+                       In_Opposing_Party_CD = ""))
+
+# Plot
+opp_vax_plot <- ggplot(coeffs_of_interest, aes(x = term, y = odds_ratio)) +
+  geom_bar(stat = "identity", fill = c("Orange"), width = 0.7) +
+  geom_errorbar(aes(ymin = exp(estimate - std.error*1.96), 
+                    ymax = exp(estimate + std.error*1.96)), width = 0.3) +
+  scale_y_continuous(labels = scales::comma, 
+                     breaks = scales::pretty_breaks(),
+                     limits = c(NA, 1)) +  # Set the upper limit to 1
+  labs(y = "Odds Ratio", x = "Opposite-Party-Dominant ZIP Code", 
+       title = "Likelihood of Vaccination in mid 2021 by Partisan ZIP Code Majority",
+       subtitle = "Reference: Same-Party-Dominant ZIP Code") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 # View the model summary
 summary(opp_vax_model)
+
+opp_vax_plot
+
 rm(opp_vax_model)
 ```
 

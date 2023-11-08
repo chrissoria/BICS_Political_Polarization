@@ -16,17 +16,78 @@ RD_df <- df[df$political_party %in% c("Republican", "Democrat"), ]
 ```
 
 
-The closer to republicanisn the less contact reduction
+The closer to republicanism the less contact reduction
+How does this fit with the previous plot on opposing party generally being less likely to say they reduced contact?
+Republicans are generally less concerned and also democrats in republican districts are less concerned
 ```{r}
 dvr_contact_reduction_model <- glm(contact_reduction ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party_to_CD, data = df, family = binomial)
+
+# Get tidy data frame of coefficients
+tidy_model <- broom::tidy(dvr_contact_reduction_model)
+
+# Filter the coefficients you are interested in and calculate odds ratios
+selected_coeff <- tidy_model %>%
+  filter(term %in% c("political_party_to_CDDemocrat in Republican led CD", 
+                     "political_party_to_CDRepublican in Democratic led CD", 
+                     "political_party_to_CDRepublican in Republican led CD")) %>%
+  mutate(odds_ratio = exp(estimate)) %>%
+  mutate(term = ifelse(term == "political_party_to_CDDemocrat in Republican led CD", "Democrat in Republican CD", term)) %>%
+  mutate(term = ifelse(term == "political_party_to_CDRepublican in Democratic led CD", "Republican in Democratic CD", term)) %>% 
+  mutate(term = ifelse(term == "political_party_to_CDRepublican in Republican led CD", "Republican in Republican CD", term))
+
+# Plot
+dvr_contact_reduction_plot <- ggplot(selected_coeff, aes(x = reorder(term, odds_ratio), y = odds_ratio, color = term)) +
+  geom_point(size = 4) +
+  geom_errorbar(aes(ymin = exp(estimate - std.error*1.96), 
+                    ymax = exp(estimate + std.error*1.96)), width = 0.2) +
+  coord_flip() +
+  labs(y = "Odds Ratio", x = "", title = "Partisan Contact Reduction Across Opposing Party Districts",
+       subtitle = "Reference Category: Democrats in Democratic led CD") +
+  scale_y_continuous(breaks = scales::pretty_breaks(),
+                     limits = c(NA, 1)) +
+  theme_minimal() +
+  theme(legend.position = "none")+
+  scale_color_manual(values = c("blue", "magenta", "red")) 
+
+print(dvr_contact_reduction_plot)
 
 # View the model summary
 summary(dvr_contact_reduction_model)
 rm(dvr_contact_reduction_model)
 ```
 Republicans generally are less concerned than democrats
+Republicans in Democratic CD's are more likely to be concerned about spread (controlling for urbanicity)
+But Democrats are not more or less concerned about the spread when in an opposing party CD
 ```{r}
 dvr_concern_model <- glm(binary_concern_strong ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party_to_CD, data = df, family = binomial)
+
+# Get tidy data frame of coefficients
+tidy_model <- broom::tidy(dvr_concern_model)
+
+# Filter the coefficients you are interested in and calculate odds ratios
+selected_coeff <- tidy_model %>%
+  filter(term %in% c("political_party_to_CDDemocrat in Republican led CD", 
+                     "political_party_to_CDRepublican in Democratic led CD", 
+                     "political_party_to_CDRepublican in Republican led CD")) %>%
+  mutate(odds_ratio = exp(estimate)) %>%
+  mutate(term = ifelse(term == "political_party_to_CDDemocrat in Republican led CD", "Democrat in Republican CD", term)) %>%
+  mutate(term = ifelse(term == "political_party_to_CDRepublican in Democratic led CD", "Republican in Democratic CD", term)) %>% 
+  mutate(term = ifelse(term == "political_party_to_CDRepublican in Republican led CD", "Republican in Republican CD", term))
+
+# Plot
+dvr_concern_plot <- ggplot(selected_coeff, aes(x = reorder(term, odds_ratio), y = odds_ratio, color = term)) +
+  geom_point(size = 4) +
+  geom_errorbar(aes(ymin = exp(estimate - std.error*1.96), 
+                    ymax = exp(estimate + std.error*1.96)), width = 0.2) +
+  coord_flip() +
+  labs(y = "Odds Ratio", x = "", title = "Partisan Concern of Spread of Coronavirus Across Opposing Party Districts",
+       subtitle = "Reference Category: Democrats in Democratic led CD") +
+  scale_y_continuous(breaks = scales::pretty_breaks()) +
+  theme_minimal() +
+  theme(legend.position = "none")+
+  scale_color_manual(values = c("blue", "magenta", "red")) 
+
+print(dvr_concern_plot)
 
 # View the model summary
 summary(dvr_concern_model)
@@ -36,7 +97,35 @@ However, being in an opposing CD doesn't mean you're less likely to report conta
 Independents are having the most contact
 Democrats are not more or less likely to have contact with people in different settings
 ```{r}
-dvr_contact_model <- lm(Contacts ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party_to_CD, data = df)
+dvr_contact_model <- lm(num_cc_nonhh ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party_to_CD, data = df)
+
+# Get tidy data frame of coefficients
+tidy_model <- broom::tidy(dvr_contact_model)
+
+# Filter the coefficients you are interested in and calculate odds ratios
+selected_coeff <- tidy_model %>%
+  filter(term %in% c("political_party_to_CDDemocrat in Republican led CD", 
+                     "political_party_to_CDRepublican in Democratic led CD", 
+                     "political_party_to_CDRepublican in Republican led CD")) %>%
+  mutate(odds_ratio = exp(estimate)) %>%
+  mutate(term = ifelse(term == "political_party_to_CDDemocrat in Republican led CD", "Democrat in Republican CD", term)) %>%
+  mutate(term = ifelse(term == "political_party_to_CDRepublican in Democratic led CD", "Republican in Democratic CD", term)) %>% 
+  mutate(term = ifelse(term == "political_party_to_CDRepublican in Republican led CD", "Republican in Republican CD", term))
+
+# Plot
+dvr_contact_plot <- ggplot(selected_coeff, aes(x = term, y = estimate, color = term)) +
+  geom_point(size = 4) +
+  geom_errorbar(aes(ymin = estimate - std.error*1.96, 
+                    ymax = estimate + std.error*1.96), width = 0.2) +
+  coord_flip() +
+  labs(y = "Number of Non-Household Contacts", x = "", title = "Partisan Differences in Non-Household Contacts Across Opposing Party Districts",
+       subtitle = "Reference Category: Democrats in Democratic led CD") +
+  scale_y_continuous(breaks = scales::pretty_breaks()) +
+  theme_minimal() +
+  theme(legend.position = "none")+
+  scale_color_manual(values = c("blue", "magenta", "red"))
+
+print(dvr_contact_plot)
 
 # View the model summary
 summary(dvr_contact_model)
@@ -48,6 +137,35 @@ Suggesting some peer pressure effects based on majority
 ```{r}
 dvr_masked_contact_model <- lm(Norm_Masks_Used ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party_to_CD, data = df)
 
+# Get tidy data frame of coefficients
+tidy_model <- broom::tidy(dvr_masked_contact_model)
+
+# Filter the coefficients you are interested in and calculate odds ratios
+selected_coeff <- tidy_model %>%
+  filter(term %in% c("political_party_to_CDDemocrat in Republican led CD", 
+                     "political_party_to_CDRepublican in Democratic led CD", 
+                     "political_party_to_CDRepublican in Republican led CD")) %>%
+  mutate(odds_ratio = exp(estimate)) %>%
+  mutate(term = ifelse(term == "political_party_to_CDDemocrat in Republican led CD", "Democrat in Republican CD", term)) %>%
+  mutate(term = ifelse(term == "political_party_to_CDRepublican in Democratic led CD", "Republican in Democratic CD", term)) %>% 
+  mutate(term = ifelse(term == "political_party_to_CDRepublican in Republican led CD", "Republican in Republican CD", term))
+
+# Plot
+dvr_masked_contact_plot <- ggplot(selected_coeff, aes(x = term, y = estimate, color = term)) +
+  geom_point(size = 4) +
+  geom_errorbar(aes(ymin = estimate - std.error*1.96, 
+                    ymax = estimate + std.error*1.96), width = 0.2) +
+  coord_flip() +
+  labs(y = "Number of Non-Household Contacts", x = "", title = "Partisan Differences in Non-Household Mask-Wearing Across Opposing Party Districts",
+       subtitle = "Reference Category: Democrats in Democratic led CD") +
+  scale_y_continuous(breaks = scales::pretty_breaks(),
+                     limits = c(NA,0)) +
+  theme_minimal() +
+  theme(legend.position = "none")+
+  scale_color_manual(values = c("blue", "magenta", "red"))
+
+print(dvr_masked_contact_plot)
+
 # View the model summary
 summary(dvr_masked_contact_model)
 rm(dvr_masked_contact_model)
@@ -56,13 +174,71 @@ Overall, they're less likely to be safe in their contacts
 ```{r}
 dvr_safety_model <- lm(Non_Weighted_Safety_Index ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party_to_CD, data = df)
 
+# Get tidy data frame of coefficients
+tidy_model <- broom::tidy(dvr_safety_model)
+
+# Filter the coefficients you are interested in and calculate odds ratios
+selected_coeff <- tidy_model %>%
+  filter(term %in% c("political_party_to_CDDemocrat in Republican led CD", 
+                     "political_party_to_CDRepublican in Democratic led CD", 
+                     "political_party_to_CDRepublican in Republican led CD")) %>%
+  mutate(odds_ratio = exp(estimate)) %>%
+  mutate(term = ifelse(term == "political_party_to_CDDemocrat in Republican led CD", "Democrat in Republican CD", term)) %>%
+  mutate(term = ifelse(term == "political_party_to_CDRepublican in Democratic led CD", "Republican in Democratic CD", term)) %>% 
+  mutate(term = ifelse(term == "political_party_to_CDRepublican in Republican led CD", "Republican in Republican CD", term))
+
+# Plot
+dvr_safety_plot <- ggplot(selected_coeff, aes(x = term, y = estimate, color = term)) +
+  geom_point(size = 4) +
+  geom_errorbar(aes(ymin = estimate - std.error*1.96, 
+                    ymax = estimate + std.error*1.96), width = 0.2) +
+  coord_flip() +
+  labs(y = "Number of Non-Household Contacts", x = "", title = "Partisan Differences in Non-Household Safety Precautions Across Opposing Party Districts",
+       subtitle = "Reference Category: Democrats in Democratic led CD") +
+  scale_y_continuous(breaks = scales::pretty_breaks(),
+                     limits = c(NA,.01)) +
+  theme_minimal() +
+  theme(legend.position = "none")+
+  scale_color_manual(values = c("blue", "magenta", "red"))
+
+print(dvr_safety_plot)
+
 # View the model summary
 summary(dvr_safety_model)
 rm(dvr_safety_model)
 ```
 
 ```{r}
-dvr_vax_model <- glm(as.factor(covid19_vax) ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party_to_CD, data = df, family = binomial)
+dvr_vax_model <- glm(Vaccinated ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party_to_CD, data = df, family = binomial)
+
+# Get tidy data frame of coefficients
+tidy_model <- broom::tidy(dvr_vax_model)
+
+# Filter the coefficients you are interested in and calculate odds ratios
+selected_coeff <- tidy_model %>%
+  filter(term %in% c("political_party_to_CDDemocrat in Republican led CD", 
+                     "political_party_to_CDRepublican in Democratic led CD", 
+                     "political_party_to_CDRepublican in Republican led CD")) %>%
+  mutate(odds_ratio = exp(estimate)) %>%
+  mutate(term = ifelse(term == "political_party_to_CDDemocrat in Republican led CD", "Democrat in Republican CD", term)) %>%
+  mutate(term = ifelse(term == "political_party_to_CDRepublican in Democratic led CD", "Republican in Democratic CD", term)) %>% 
+  mutate(term = ifelse(term == "political_party_to_CDRepublican in Republican led CD", "Republican in Republican CD", term))
+
+# Plot
+dvr_vax_plot <- ggplot(selected_coeff, aes(x = reorder(term, odds_ratio), y = odds_ratio, color = term)) +
+  geom_point(size = 4) +
+  geom_errorbar(aes(ymin = exp(estimate - std.error*1.96), 
+                    ymax = exp(estimate + std.error*1.96)), width = 0.2) +
+  coord_flip() +
+  labs(y = "Odds Ratio", x = "", title = "Partisan Vaccination Across Opposing Party Districts",
+       subtitle = "Reference Category: Democrats in Democratic led CD") +
+  scale_y_continuous(breaks = scales::pretty_breaks(),
+                     limits = c(NA, 1.5)) +
+  theme_minimal() +
+  theme(legend.position = "none")+
+  scale_color_manual(values = c("blue", "magenta", "red")) 
+
+print(dvr_vax_plot)
 
 # View the model summary
 summary(dvr_vax_model)
