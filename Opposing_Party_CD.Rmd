@@ -52,7 +52,7 @@ rm(opp_contact_reduction_model)
 ```
 Being in an opposing party CD means less likely to be concerened about the spread of the virus
 ```{r}
-opp_concern_model <- glm(binary_concern_strong ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + In_Opposing_Party_CD, data = df, family = binomial)
+opp_concern_model <- glm(binary_concern_strong ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + In_Opposing_Party_CD + politcal_party, data = df, family = binomial)
 
 # View the model summary
 tidy_model <- broom::tidy(opp_concern_model)

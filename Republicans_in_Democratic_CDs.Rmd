@@ -12,6 +12,7 @@ library(dplyr)
 
 ```{r}
 df <- fread("/Users/chrissoria/Documents/Research/BICS_Political_Polarization/data/BICS_ZIP_Features.csv")
+names(df) <- make.unique(names(df))
 RD_df <- df[df$political_party %in% c("Republican", "Democrat"), ]
 ```
 
