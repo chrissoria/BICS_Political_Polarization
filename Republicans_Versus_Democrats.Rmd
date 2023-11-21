@@ -166,3 +166,89 @@ summary(rvd_vax_model)
 rm(rvd_vax_model)
 ```
 
+linear model does well for num_cc_nonnhh
+We see the opposite relationship for Democrats and Republicans
+Implying that Democrats are more likely to have outside household contacts in regions where more people voted R
+Futher, Republicans are less likely to have outside household contacts in regions where more people voted D
+```{r}
+D_model_contacts <- lm(republican_percentage_won ~ num_cc_nonhh, data = D_df)
+
+plot(D_df$republican_percentage_won, D_df$num_cc_nonhh, 
+     xlab = "Republican Percentage Won", ylab = "Non-Household Contacts",
+     main = "Linear Regression of Non-HH Contacts on Republican Percentage Won")
+
+abline(D_model_contacts, col = "blue")
+
+R_model_contacts <- lm(democrat_percentage_won ~ num_cc_nonhh, data = R_df)
+
+plot(R_df$democrat_percentage_won, R_df$num_cc_nonhh, 
+     xlab = "Democrat Percentage Won", ylab = "Non-Household Contacts",
+     main = "Linear Regression of Non-HH Contacts on Democrat Percentage Won")
+
+abline(R_model_contacts, col = "blue")
+
+print(summary(R_model_contacts))
+print(summary(D_model_contacts))
+```
+What about masked contacts?
+```{r}
+D_model_Mcontacts <- lm(republican_percentage_won ~ Norm_Masks_Used, data = D_df)
+
+plot(D_df$republican_percentage_won, D_df$Norm_Masks_Used, 
+     xlab = "Republican Percentage Won", ylab = "Proportion Where Masks Used",
+     main = "Linear Regression of Mask Usage on Republican Percentage Won")
+
+abline(D_model_contacts, col = "blue")
+
+R_model_Mcontacts <- lm(democrat_percentage_won ~ Norm_Masks_Used, data = R_df)
+
+plot(R_df$democrat_percentage_won, R_df$Norm_Masks_Used, 
+     xlab = "Democrat Percentage Won", ylab = "Proportion Where Masks Used",
+     main = "Linear Regression of Mask Usage on Democrat Percentage Won")
+
+abline(R_model_contacts, col = "blue")
+
+print(summary(D_model_Mcontacts))
+print(summary(R_model_Mcontacts))
+```
+```{r}
+# Fit the Model
+model <- glm(contact_reduction ~ republican_percentage_won, family = "binomial", data = D_df)
+
+# Create Prediction Data
+prediction_data <- data.frame(republican_percentage_won = seq(min(D_df$republican_percentage_won, na.rm = TRUE), 
+                                                             max(D_df$republican_percentage_won, na.rm = TRUE), 
+                                                             length.out = 100))
+
+# Get Predictions
+prediction_data$predicted_prob <- predict(model, newdata = prediction_data, type = "response")
+
+# Plot the Curve
+library(ggplot2)
+ggplot(prediction_data, aes(x = republican_percentage_won, y = predicted_prob)) + 
+  geom_line() +
+  labs(x = "Republican Percentage Won", y = "Predicted Probability of Contact Reduction") +
+  ggtitle("Logistic Regression Curve")
+
+```
+
+```{r}
+# Fit the Model
+model <- glm(contact_reduction ~ democrat_percentage_won, family = "binomial", data = R_df)
+
+# Create Prediction Data
+prediction_data <- data.frame(democrat_percentage_won = seq(min(D_df$democrat_percentage_won, na.rm = TRUE), 
+                                                             max(D_df$democrat_percentage_won, na.rm = TRUE), 
+                                                             length.out = 100))
+
+# Get Predictions
+prediction_data$predicted_prob <- predict(model, newdata = prediction_data, type = "response")
+
+# Plot the Curve
+library(ggplot2)
+ggplot(prediction_data, aes(x = democrat_percentage_won, y = predicted_prob)) + 
+  geom_line() +
+  labs(x = "Republican Percentage Won", y = "Predicted Probability of Contact Reduction") +
+  ggtitle("Logistic Regression Curve")
+```
+

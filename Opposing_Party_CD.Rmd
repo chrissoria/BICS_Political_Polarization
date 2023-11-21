@@ -14,6 +14,8 @@ library(patchwork)
 ```{r}
 df <- fread("/Users/chrissoria/Documents/Research/BICS_Political_Polarization/data/BICS_ZIP_Features.csv")
 RD_df <- df[df$political_party %in% c("Republican", "Democrat"), ]
+D_df <- df[df$political_party == "Democrat"]
+R_df <- df[df$political_party == "Republican"]
 ```
 
 
