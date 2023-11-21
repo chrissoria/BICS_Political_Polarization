@@ -12,4 +12,6 @@
 12. Assess the diversity of alters
 13. conduct Dyadic Analysis
 14. Check the best model for the number of non-household contacts (x)
-15. Check the best model for norm mask used 
+15. Check the best model for norm mask used
+16. lag the mortality rates ( )
+17. include mortality rates for 2021 ( )
