@@ -47,12 +47,12 @@ Let's try everything in a poisson
 Given the large maximum deviance residual and the high residual deviance, this suggests overdispersion, which could indicate that a Negative Binomial model would be more appropriate.
 
 ```{r}
-D_model_poisson <- glm(num_cc_nonhh ~ republican_percentage_won + COV_County_CMR_2020_06_20 + 
+D_model_poisson <- glm(num_cc_nonhh ~ trump_percentage_won + COV_County_CMR_2020_06_20 + 
                        State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + 
                        resp_educ + resp_yob + r_working + r_race, 
                        family = "poisson", data = D_df)
 
-R_model_poisson <- glm(num_cc_nonhh ~ democrat_percentage_won + COV_County_CMR_2020_06_20 + 
+R_model_poisson <- glm(num_cc_nonhh ~ biden_percentage_won + COV_County_CMR_2020_06_20 + 
                        State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + 
                        resp_educ + resp_yob + r_working + r_race, 
                        family = "poisson", data = R_df)
