@@ -24,17 +24,17 @@ Futher, Republicans are less likely to have outside household contacts in region
 What I'm seeing here is that every 10% increase in Trump against Biden vote percentage in the county is associated with .2 more non-household contacts
 Every 10% increase in Biden against Trump vote percentage in the county is associated with a .7 reduction in non-household contacts
 ```{r}
-D_model_contacts <- lm(num_cc_nonhh ~ republican_percentage_won + COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race, data = D_df)
+D_model_contacts <- lm(num_cc_nonhh ~ trump_percentage_won + COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race, data = D_df)
 
-plot(D_df$republican_percentage_won, D_df$num_cc_nonhh, 
+plot(D_df$trump_percentage_won, D_df$num_cc_nonhh, 
      xlab = "Republican Percentage Won", ylab = "Non-Household Contacts",
      main = "plot of Non-HH Contacts on Republican Percentage Won")
 
 abline(D_model_contacts, col = "blue")
 
-R_model_contacts <- lm(num_cc_nonhh ~ democrat_percentage_won + COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race, data = R_df)
+R_model_contacts <- lm(num_cc_nonhh ~ biden_percentage_won + COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race, data = R_df)
 
-plot(R_df$democrat_percentage_won, R_df$num_cc_nonhh, 
+plot(R_df$biden_percentage_won, R_df$num_cc_nonhh, 
      xlab = "Democrat Percentage Won", ylab = "Non-Household Contacts",
      main = "Linear Regression of Non-HH Contacts on Democrat Percentage Won")
 
@@ -84,11 +84,11 @@ AIC is much lower here (indicating a better fit)
 library(MASS)
 
 # Convert the Poisson models to Negative Binomial models
-D_model_negbin <- glm.nb(num_cc_nonhh ~ republican_percentage_won + COV_County_CMR_2020_06_20 + 
+D_model_negbin <- glm.nb(num_cc_nonhh ~ trump_percentage_won + COV_County_CMR_2020_06_20 + 
                          State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + 
                          resp_educ + resp_yob + r_working + r_race, data = D_df)
 
-R_model_negbin <- glm.nb(num_cc_nonhh ~ democrat_percentage_won + COV_County_CMR_2020_06_20 + 
+R_model_negbin <- glm.nb(num_cc_nonhh ~ biden_percentage_won + COV_County_CMR_2020_06_20 + 
                          State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + 
                          resp_educ + resp_yob + r_working + r_race, data = R_df)
 
@@ -148,12 +148,12 @@ if (!requireNamespace("pscl", quietly = TRUE)) {
 }
 library(pscl)
 
-D_model_negbin <- glm.nb(num_cc_nonhh ~ republican_percentage_won + COV_County_CMR_2020_06_20 + 
+D_model_negbin <- glm.nb(num_cc_nonhh ~ trump_percentage_won + COV_County_CMR_2020_06_20 + 
                          resp_sex + 
                          resp_educ + resp_yob + r_working + r_race, data = D_df)
 
 # Fit a Zero-Inflated Negative Binomial model
-D_model_zinb <- zeroinfl(num_cc_nonhh ~ republican_percentage_won + COV_County_CMR_2020_06_20 + 
+D_model_zinb <- zeroinfl(num_cc_nonhh ~ biden_percentage_won + COV_County_CMR_2020_06_20 + 
                          resp_sex + 
                          resp_educ + resp_yob + r_working + r_race | 1, data = D_df, 
                          dist = "negbin")
@@ -169,7 +169,7 @@ print(c(aic_negbin, aic_zinb))
 Let's run a few diagnostic tests (first I'll check VIF)
 ```{r}
 # Convert the Poisson models to Negative Binomial models
-D_model_negbin <- glm.nb(num_cc_nonhh ~ republican_percentage_won + COV_County_CMR_2020_06_20 + 
+D_model_negbin <- glm.nb(num_cc_nonhh ~ trump_percentage_won + COV_County_CMR_2020_06_20 + 
                          State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + 
                          resp_educ + resp_yob + r_working + r_race, data = D_df)
 
