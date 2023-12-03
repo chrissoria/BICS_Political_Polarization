@@ -1,0 +1,76 @@
+---
+title: "Non_Household_Contacts"
+author: "Christopher Soria"
+date: "2023-12-02"
+output: html_document
+---
+
+```{r}
+library(data.table)
+library(tidyverse)
+library(dplyr)
+library(MASS)
+library(gridExtra)
+library(broom)
+
+df <- fread("/Users/chrissoria/Documents/Research/BICS_Political_Polarization/data/BICS_ZIP_Features.csv")
+RD_df <- df[df$political_party %in% c("Republican", "Democrat"), ]
+D_df <- df[df$political_party == "Democrat"]
+R_df <- df[df$political_party == "Republican"]
+
+names(df) <- make.unique(names(df))
+names(RD_df) <- make.unique(names(RD_df))
+names(D_df) <- make.unique(names(D_df))
+names(R_df) <- make.unique(names(R_df))
+```
+1.6 means that Republicans are expected to have 1.6 times as many non-household contacts as Democrats, on average.
+
+```{r}
+# Model for Wave 1
+contacts_R_v_D_w1 <- glm.nb(num_cc_nonhh ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNT_RUCC_CAT + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party, data = subset(df, wave == 2))
+
+# Model for Wave 2
+contacts_R_v_D_w2 <- glm.nb(num_cc_nonhh ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNT_RUCC_CAT + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party, data = subset(df, wave == 4))
+# Model for Wave 3
+contacts_R_v_D_w3 <- glm.nb(num_cc_nonhh ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNT_RUCC_CAT + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party, data = subset(df, wave == 6))
+
+# Define a new function to extract both the coefficient and its standard error
+extract_coefficient_and_error <- function(model, coefficient_name) {
+  estimate <- coef(summary(model))[coefficient_name, "Estimate"]
+  std_error <- coef(summary(model))[coefficient_name, "Std. Error"]
+  list(coefficient = exp(estimate), 
+       lower = exp(estimate - 1.96 * std_error), 
+       upper = exp(estimate + 1.96 * std_error))
+}
+
+# Extract coefficients and standard errors for each wave
+coeff_wave1 <- extract_coefficient_and_error(contacts_R_v_D_w1, "political_partyRepublican")
+coeff_wave2 <- extract_coefficient_and_error(contacts_R_v_D_w2, "political_partyRepublican")
+coeff_wave3 <- extract_coefficient_and_error(contacts_R_v_D_w3, "political_partyRepublican")
+
+# Combine coefficients into a data frame
+coefficients_df <- data.frame(
+  Wave = factor(c(1, 2, 3)),
+  Coefficient = c(coeff_wave1$coefficient, coeff_wave2$coefficient, coeff_wave3$coefficient),
+  Lower = c(coeff_wave1$lower, coeff_wave2$lower, coeff_wave3$lower),
+  Upper = c(coeff_wave1$upper, coeff_wave2$upper, coeff_wave3$upper)
+)
+
+contacts_R_v_D_plot <- ggplot(coefficients_df, aes(x = Wave, y = Coefficient, shape = Wave)) +  # Add shape mapping to aes()
+  geom_point(position = position_dodge(width = 0.25), size = 3, color = "red") +
+  geom_errorbar(aes(ymin = Lower, ymax = Upper), width = 0.1, position = position_dodge(width = 0.25), color = "red") +
+  scale_shape_manual(values = c(16, 15, 17),  # Define shapes for each wave
+                     labels = c("Wave 1", "Wave 2", "Wave 3")) +  # Custom labels for the legend
+  labs(title = "Wave-Specific IRR of Non-Household Contacts for Republicans During the Pandemic",
+       subtitle = "Reference: Democrats",
+       x = "Wave",
+       y = "Exponentiated Coefficient",
+       shape = "Wave Shapes") +  # Label for the shape legend
+  theme_minimal() +
+  theme(legend.position = "bottom")  # Adjust legend position
+
+rm(coeff_wave1,coeff_wave2,coeff_wave3,contacts_R_v_D_w1,contacts_R_v_D_w2,contacts_R_v_D_w3)
+# Print the plot
+print(contacts_R_v_D_plot)
+```
+
