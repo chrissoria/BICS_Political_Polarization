@@ -24,25 +24,30 @@ Futher, Republicans are less likely to have outside household contacts in region
 What I'm seeing here is that every 10% increase in Trump against Biden vote percentage in the county is associated with .2 more non-household contacts
 Every 10% increase in Biden against Trump vote percentage in the county is associated with a .7 reduction in non-household contacts
 ```{r}
-D_model_contacts <- lm(num_cc_nonhh ~ trump_percentage_won + COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race, data = D_df)
+D_model_contacts <- lm(num_cc_nonhh ~ trump_percentage_won, data = D_df)
 
 plot(D_df$trump_percentage_won, D_df$num_cc_nonhh, 
-     xlab = "Republican Percentage Won", ylab = "Non-Household Contacts",
-     main = "plot of Non-HH Contacts on Republican Percentage Won")
+     xlab = "Trump Percentage Won", ylab = "Non-Household Contacts",
+     main = "Plot of Non-HH Contacts on Trump Percentage Won for Democrats")
 
 abline(D_model_contacts, col = "blue")
 
-R_model_contacts <- lm(num_cc_nonhh ~ biden_percentage_won + COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race, data = R_df)
+R_model_contacts <- lm(num_cc_nonhh ~ biden_percentage_won, data = R_df)
 
 plot(R_df$biden_percentage_won, R_df$num_cc_nonhh, 
-     xlab = "Democrat Percentage Won", ylab = "Non-Household Contacts",
-     main = "Linear Regression of Non-HH Contacts on Democrat Percentage Won")
+     xlab = "Biden Percentage Won", ylab = "Non-Household Contacts",
+     main = "Plot of Non-HH Contacts on Biden Percentage Won for Republicans")
 
 abline(R_model_contacts, col = "blue")
 
 print(summary(R_model_contacts))
 print(summary(D_model_contacts))
 ```
+```{r}
+
+```
+
+
 Let's try everything in a poisson
 Given the large maximum deviance residual and the high residual deviance, this suggests overdispersion, which could indicate that a Negative Binomial model would be more appropriate.
 

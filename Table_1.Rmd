@@ -108,3 +108,45 @@ print(average_by_candidate)
 rm(average_by_candidate)
 ```
 
+```{r}
+average_by_candidate <- R_df %>%
+  group_by(Categorical_Biden_County_Share) %>%
+  summarise(
+    average_num_cc_nonhh = mean(num_cc_nonhh, na.rm = TRUE),
+    average_contact_reduction = mean(contact_reduction, na.rm = TRUE),
+    average_concern = mean(binary_concern_strong, na.rm = TRUE),
+    average_mask_usage = mean(Norm_Masks_Used, na.rm = TRUE),
+    average_safety_index = mean(Non_Weighted_Safety_Index, na.rm = TRUE),
+    average_vaccinated = mean(Vaccinated, na.rm = TRUE)
+  )
+
+average_by_candidate_table <- t(as.data.frame(average_by_candidate))
+average_by_candidate_table <- as.data.frame(average_by_candidate_table)
+average_by_candidate_table <- average_by_candidate_table[-1, -1]
+
+for (col in 1:3) {
+  average_by_candidate_table[, col] <- as.numeric(as.character(average_by_candidate_table[, col]))
+}
+
+average_by_candidate_table[, 1:3] <- round(average_by_candidate_table[, 1:3], digits = 3)
+
+apt_row_names <- c("Non-Household Contacts", "Level of Stated Contact Reduction", "Concern About the Spread of the Virus", "Proportion of Contacts with a Mask", "Overall Safety During Contacts", "Proportion Vaccinated")
+rownames(average_by_candidate_table) <- apt_row_names
+
+kable_output <- kable(average_by_candidate_table, 
+                      caption = "Table 2. Descriptive Outcomes for Republicans by Biden Vote Share",
+                      col.names = c("Overwhelming Majority Voted Biden", "Significant Biden Support", "Minority Biden Support"),
+                      align = c("c", "c", "c"))
+
+# Add a horizontal line after the first row
+kable_styled <- kable_output %>%
+  kable_styling() %>%
+  add_header_above(c(" " = 1, "Republican Behavior According to Percentage of County Voted Biden" = 3)) %>%  # Optional: Add a header above the column names
+  pack_rows(index = c("Counts" = 1, "Proportions" = 5))
+
+print(kable_styled)
+
+print(average_by_candidate)
+rm(average_by_candidate)
+```
+
