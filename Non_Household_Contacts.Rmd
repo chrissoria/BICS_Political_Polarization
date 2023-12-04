@@ -61,10 +61,10 @@ contacts_R_v_D_plot <- ggplot(coefficients_df, aes(x = Wave, y = Coefficient, sh
   geom_errorbar(aes(ymin = Lower, ymax = Upper), width = 0.1, position = position_dodge(width = 0.25), color = "red") +
   scale_shape_manual(values = c(16, 15, 17),  # Define shapes for each wave
                      labels = c("Wave 1", "Wave 2", "Wave 3")) +  # Custom labels for the legend
-  labs(title = "Wave-Specific IRR of Non-Household Contacts for Republicans During the Pandemic",
+  labs(title = "Wave-Specific Comparative Non-Household Contacts for Republicans During the Pandemic",
        subtitle = "Reference: Democrats",
        x = "Wave",
-       y = "Exponentiated Coefficient",
+       y = "IRR",
        shape = "Wave Shapes") +  # Label for the shape legend
   theme_minimal() +
   theme(legend.position = "bottom")  # Adjust legend position
@@ -72,5 +72,63 @@ contacts_R_v_D_plot <- ggplot(coefficients_df, aes(x = Wave, y = Coefficient, sh
 rm(coeff_wave1,coeff_wave2,coeff_wave3,contacts_R_v_D_w1,contacts_R_v_D_w2,contacts_R_v_D_w3)
 # Print the plot
 print(contacts_R_v_D_plot)
+```
+Strange and inconcistent results with Democrats in Republican CD's
+Wave 2 I don't see any difference between them and D in R CD
+Wave 4 I see they're MORE likely to have non-hh contacts in R CD
+Wave 6 I see they're LESS likely to have non-hh contacts in R CD
+
+However, Republicans are pretty consitently having more non-hh contacts over time (the only clear pattern)
+```{r}
+contacts_DC_w2 <- glm.nb(num_cc_nonhh ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNT_RUCC_CAT + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party_to_CD, data = subset(df, wave == 2))
+
+# Model for Wave 2
+contacts_DC_w4 <- glm.nb(num_cc_nonhh ~  COV_County_CMR_2020_12_09 + State_Government_Response_Index_11192020 + COUNT_RUCC_CAT + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party_to_CD, data = subset(df, wave == 4))
+# Model for Wave 3
+contacts_DC_w6 <- glm.nb(num_cc_nonhh ~  COV_County_CMR_2020_12_09 + State_Government_Response_Index_11192020 + COUNT_RUCC_CAT + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party_to_CD, data = subset(df, wave == 6))
+
+# Coefficients of interest
+coeffs_of_interest <- c("political_party_to_CDDemocrat in Republican led CD",
+                        "political_party_to_CDRepublican in Democratic led CD",
+                        "political_party_to_CDRepublican in Republican led CD")
+
+# Apply the function to each model
+coeff_wave2 <- extract_coefficient_and_error(contacts_DC_w2, coeffs_of_interest)
+coeff_wave4 <- extract_coefficient_and_error(contacts_DC_w4, coeffs_of_interest)
+coeff_wave6 <- extract_coefficient_and_error(contacts_DC_w6, coeffs_of_interest)
+
+# Add wave information to each data frame
+coeff_wave2$Wave <- "Wave 1"
+coeff_wave4$Wave <- "Wave 2"
+coeff_wave6$Wave <- "Wave 3"
+
+term_names_wave2 <- names(coeff_wave2$coefficient)
+term_names_wave4 <- names(coeff_wave4$coefficient)
+term_names_wave6 <- names(coeff_wave6$coefficient)
+
+# Combine coefficients into a data frame
+coefficients_df <- data.frame(
+  Wave = factor(c(1, 1, 1, 2, 2, 2, 3, 3, 3)),
+  Coefficient = c(coeff_wave2$coefficient, coeff_wave4$coefficient, coeff_wave6$coefficient),
+  Lower = c(coeff_wave2$lower, coeff_wave4$lower, coeff_wave6$lower),
+  Upper = c(coeff_wave2$upper, coeff_wave4$upper, coeff_wave6$upper),
+  Term = c(term_names_wave2, term_names_wave4, term_names_wave6)
+)
+
+contacts_DC_plot <- ggplot(coefficients_df, aes(x = Term, y = Coefficient, color = Term, shape = Wave)) +
+  geom_point(position = position_dodge(width = 0.3), size = 3) +  # Dodge applied to points
+  geom_errorbar(aes(ymin = Lower, ymax = Upper), width = 0.1, position = position_dodge(width = 0.3)) +  # Dodge also applied to error bars
+  scale_color_manual(name = "Term", 
+                     values = c("blue", "purple", "red"),
+                     labels = c("Dem in Rep CD", "Rep in Dem CD", "Rep in Rep CD")) +
+  scale_shape_manual(values = c(16, 15, 17)) +
+  theme_minimal() +
+  labs(title = "Wave-Specific Comparative Non-Household Contacts for Partisans Within Congressional District Context", 
+       subtitle = "Reference: Dems in Dem Districts",
+       x = "Category", 
+       y = "IRR") +
+  scale_x_discrete(labels = c("Dems in Repub Disctricts", "Repubs in Dem Districts", "Repubs in Repub Distritics")) # Custom x-axis labels
+
+print(contacts_DC_plot)
 ```
 
