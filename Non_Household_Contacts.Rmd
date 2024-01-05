@@ -14,14 +14,27 @@ library(gridExtra)
 library(broom)
 
 df <- fread("/Users/chrissoria/Documents/Research/BICS_Political_Polarization/data/BICS_ZIP_Features.csv")
+names(df) <- make.unique(names(df))
+df$data_collected_dates <- factor(df$data_collected_dates, levels = c("June 18-24, '20", "September 12-20, '20'", "December 1-7, '20'","February 9-14, '21'","May 14-25, '21'"))  
+
+df$Categorical_Dem_CD_County_Share <- factor(
+  df$Categorical_Dem_CD_County_Share,
+  levels = c("Greater than or Equal to Three Quarters", "Three Quarters", "Two Quarters", "Less Than a Quarter"),
+  ordered = FALSE
+)
+
+df$Categorical_Repub_CD_County_Share <- factor(
+  df$Categorical_Repub_CD_County_Share,
+  levels = c("Greater than or Equal to Three Quarters", "Three Quarters", "Two Quarters", "Less Than a Quarter"),
+  ordered = FALSE
+)
+
 RD_df <- df[df$political_party %in% c("Republican", "Democrat"), ]
 D_df <- df[df$political_party == "Democrat"]
 R_df <- df[df$political_party == "Republican"]
 
-names(df) <- make.unique(names(df))
-names(RD_df) <- make.unique(names(RD_df))
-names(D_df) <- make.unique(names(D_df))
-names(R_df) <- make.unique(names(R_df))
+D_df <- D_df[D_df$Categorical_Repub_CD_County_Share != ""]
+R_df <- R_df[R_df$Categorical_Dem_CD_County_Share != ""]
 ```
 1.6 means that Republicans are expected to have 1.6 times as many non-household contacts as Democrats, on average.
 
@@ -69,10 +82,15 @@ contacts_R_v_D_plot <- ggplot(coefficients_df, aes(x = Wave, y = Coefficient, sh
   theme_minimal() +
   theme(legend.position = "bottom")  # Adjust legend position
 
+print(summary(contacts_R_v_D_w1))
+print(summary(contacts_R_v_D_w2))
+print(summary(contacts_R_v_D_w3))
+
 rm(coeff_wave1,coeff_wave2,coeff_wave3,contacts_R_v_D_w1,contacts_R_v_D_w2,contacts_R_v_D_w3)
 # Print the plot
 print(contacts_R_v_D_plot)
 ```
+
 Strange and inconcistent results with Democrats in Republican CD's
 Wave 2 I don't see any difference between them and D in R CD
 Wave 4 I see they're MORE likely to have non-hh contacts in R CD
@@ -130,5 +148,93 @@ contacts_DC_plot <- ggplot(coefficients_df, aes(x = Term, y = Coefficient, color
   scale_x_discrete(labels = c("Dems in Repub Disctricts", "Repubs in Dem Districts", "Repubs in Repub Distritics")) # Custom x-axis labels
 
 print(contacts_DC_plot)
+```
+```{r}
+contacts_DC_w2 <- glm.nb(num_cc_nonhh ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNT_RUCC_CAT + resp_sex + resp_educ + resp_yob + r_working + r_race + CD_PERCENT_REPUBLICAN +political_party, data = subset(df, wave == 2))
+
+# Model for Wave 2
+contacts_DC_w4 <- glm.nb(num_cc_nonhh ~  COV_County_CMR_2020_12_09 + State_Government_Response_Index_11192020 + COUNT_RUCC_CAT + resp_sex + resp_educ + resp_yob + r_working + r_race + as.factor(Categorical_Repub_CD_County_Share), data = subset(D_df, wave == 4))
+# Model for Wave 3
+contacts_DC_w6 <- glm.nb(num_cc_nonhh ~  COV_County_CMR_2020_12_09 + State_Government_Response_Index_11192020 + COUNT_RUCC_CAT + resp_sex + resp_educ + resp_yob + r_working + r_race + as.factor(Categorical_Repub_CD_County_Share), data = subset(D_df, wave == 6))
+```
+```{r}
+print(summary(contacts_DC_w4))
+print(summary(contacts_DC_w6))
+```
+
+The above is producing errors (I think because I'm subsetting to the point that some categories becomes too small). For now I'll run it across all three waves and return to the above later.
+
+```{r}
+D_nonhh_CD_per_model <- glm.nb(num_cc_nonhh ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNT_RUCC_CAT + resp_sex + resp_educ + resp_yob + r_working + r_race + Categorical_Repub_CD_County_Share, data = D_df)
+
+# Get tidy data frame of coefficients
+tidy_model <- broom::tidy(D_nonhh_CD_per_model)
+
+coeffs_of_interest <- tidy_model %>%
+  filter(term %in% c("Categorical_Repub_CD_County_ShareThree Quarters", 
+                     "Categorical_Repub_CD_County_ShareTwo Quarters", 
+                     "Categorical_Repub_CD_County_ShareLess Than a Quarter")) %>%
+  mutate(
+    IRR = exp(estimate),
+    CI_lower = exp(estimate - 1.96 * std.error),
+    CI_upper = exp(estimate + 1.96 * std.error)
+  ) %>% 
+  mutate(term = ifelse(term == "Categorical_Repub_CD_County_ShareThree Quarters", "Republican Majority", term)) %>%
+  mutate(term = ifelse(term == "Categorical_Repub_CD_County_ShareTwo Quarters", "Small Democrat Majority", term)) %>%
+  mutate(term = ifelse(term == "Categorical_Repub_CD_County_ShareLess Than a Quarter", "Strong Democrat Majority", term))
+
+# Create the plot
+D_nonhh_CD_per_plot <- ggplot(coeffs_of_interest, aes(x = term, y = IRR)) +
+  geom_point(color = "blue", size = 3) +
+  geom_errorbar(aes(ymin = CI_lower, ymax = CI_upper), width = 0, color = "blue") +
+  scale_y_continuous("Incident Rate Ratio (IRR)", 
+                     breaks = scales::pretty_breaks(), 
+                     limits = c(NA, max(coeffs_of_interest$CI_upper) * 1.1)) +
+  labs(
+    title = "Incident Rate Ratios (IRR) of Non-Household Contacts by County Voter Share",
+    subtitle = "Reference Category: Strong Republican Majority",
+    x = "Democrats by CD Share Counties"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+print(D_nonhh_CD_per_plot)
+print(summary(D_nonhh_CD_per_model))
+```
+```{r}
+R_nonhh_CD_per_model <- glm.nb(num_cc_nonhh ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNT_RUCC_CAT + resp_sex + resp_educ + resp_yob + r_working + r_race + Categorical_Dem_CD_County_Share, data = R_df)
+
+# Get tidy data frame of coefficients
+tidy_model <- broom::tidy(R_nonhh_CD_per_model)
+
+coeffs_of_interest <- tidy_model %>%
+  filter(term %in% c("Categorical_Dem_CD_County_ShareThree Quarters", 
+                     "Categorical_Dem_CD_County_ShareTwo Quarters", 
+                     "Categorical_Dem_CD_County_ShareLess Than a Quarter")) %>%
+  mutate(
+    IRR = exp(estimate),
+    CI_lower = exp(estimate - 1.96 * std.error),
+    CI_upper = exp(estimate + 1.96 * std.error)
+  ) %>% 
+  mutate(term = ifelse(term == "Categorical_Dem_CD_County_ShareThree Quarters", "Democrat Majority", term)) %>%
+  mutate(term = ifelse(term == "Categorical_Dem_CD_County_ShareTwo Quarters", "Small Republican Majority", term)) %>%
+  mutate(term = ifelse(term == "Categorical_Dem_CD_County_ShareLess Than a Quarter", "Strong Republican Majority", term))
+
+# Create the plot
+R_nonhh_CD_per_plot <- ggplot(coeffs_of_interest, aes(x = term, y = IRR)) +
+  geom_point(color = "red", size = 3) +
+  geom_errorbar(aes(ymin = CI_lower, ymax = CI_upper), width = 0, color = "red") +
+  scale_y_continuous("Incident Rate Ratio (IRR)", 
+                     breaks = scales::pretty_breaks(), 
+                     limits = c(NA, max(coeffs_of_interest$CI_upper) * 1.1)) +
+  labs(
+    title = "Incident Rate Ratios (IRR) of Non-Household Contacts by County Voter Share",
+    subtitle = "Reference Category: Strong Democrat Majority",
+    x = "Republicans by CD Share Counties"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+print(R_nonhh_CD_per_plot)
 ```
 

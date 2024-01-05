@@ -1,0 +1,71 @@
+---
+title: "Vaccine Usage and Mask wearing"
+author: "Christopher Soria"
+date: "2023-12-10"
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+---
+
+```{r}
+library(data.table)
+library(tidyverse)
+library(dplyr)
+library(knitr)
+library(gridExtra)
+library(broom)
+
+df <- fread("/Users/chrissoria/Documents/Research/BICS_Political_Polarization/data/BICS_ZIP_Features.csv")
+
+df$Categorical_Dem_CD_County_Share <- factor(
+  df$Categorical_Dem_CD_County_Share,
+  levels = c("Greater than or Equal to Three Quarters", "Three Quarters", "Two Quarters", "Less Than a Quarter"),
+  ordered = FALSE
+)
+
+df$Categorical_Repub_CD_County_Share <- factor(
+  df$Categorical_Repub_CD_County_Share,
+  levels = c("Greater than or Equal to Three Quarters", "Three Quarters", "Two Quarters", "Less Than a Quarter"),
+  ordered = FALSE
+)
+
+RD_df <- df[df$political_party %in% c("Republican", "Democrat"), ]
+D_df <- df[df$political_party == "Democrat"]
+R_df <- df[df$political_party == "Republican"]
+
+D_df <- D_df[D_df$Categorical_Repub_CD_County_Share != ""]
+R_df <- R_df[R_df$Categorical_Dem_CD_County_Share != ""]
+
+names(df) <- make.unique(names(df))
+names(RD_df) <- make.unique(names(RD_df))
+names(D_df) <- make.unique(names(D_df))
+names(R_df) <- make.unique(names(R_df))
+```
+
+Vaccination questions are only available in the 6th wave
+```{r}
+table(df$Vaccinated, df$wave)
+```
+Simple grouped average fraction of contacts carried out with a maskby vaccination status
+Overall, vaccinated people are also more careful overall (wear masks more often, fewer non-hh contacts, etc)
+```{r}
+average_by_vaccinated <- df %>%
+  group_by(Vaccinated) %>%
+  summarise(
+    average_num_cc_nonhh = mean(num_cc_nonhh, na.rm = TRUE),
+    average_contact_reduction = mean(contact_reduction, na.rm = TRUE),
+    average_concern = mean(binary_concern_strong, na.rm = TRUE),
+    average_mask_usage = mean(Norm_Masks_Used, na.rm = TRUE))
+
+print(average_by_vaccinated)
+rm(average_by_vaccinated)
+```
+The association holds even after controls in a linear model (mortality rates, state government response, rural/urban, etc)
+```{r}
+vaccinated_model <- lm(Norm_Masks_Used ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNT_RUCC_CAT + resp_sex + resp_educ + resp_yob + r_working + r_race + Vaccinated, data = df)
+
+summary(vaccinated_model)
+rm(vaccinated_model)
+```
+

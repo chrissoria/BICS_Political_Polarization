@@ -1,0 +1,133 @@
+---
+title: "Descriptives"
+author: "Christopher Soria"
+date: "2023-12-18"
+output: html_document
+---
+```{r}
+library(tidyverse)
+library(cowplot)
+library(dplyr)
+```
+
+```{r}
+D_df$data_collected_dates <- factor(D_df$data_collected_dates, levels = c("June 18-24, '20", "September 12-20, '20'", "December 1-7, '20'","February 9-14, '21'","May 14-25, '21'"))  
+```
+
+
+```{r}
+average_by_wave_dems <- D_df %>%
+  group_by(data_collected_dates) %>%
+  summarise(
+    average_num_cc_nonhh = mean(num_cc_nonhh, na.rm = TRUE),
+    average_contact_reduction = mean(contact_reduction, na.rm = TRUE),
+    average_concern = mean(binary_concern_strong, na.rm = TRUE),
+    average_mask_usage = mean(Norm_Masks_Used, na.rm = TRUE),
+    average_safety_index = mean(Non_Weighted_Safety_Index, na.rm = TRUE),
+    average_vaccinated = mean(Vaccinated, na.rm = TRUE)
+  )
+
+average_by_wave_repubs <- R_df %>%
+  group_by(data_collected_dates) %>%
+  summarise(
+    average_num_cc_nonhh = mean(num_cc_nonhh, na.rm = TRUE),
+    average_contact_reduction = mean(contact_reduction, na.rm = TRUE),
+    average_concern = mean(binary_concern_strong, na.rm = TRUE),
+    average_mask_usage = mean(Norm_Masks_Used, na.rm = TRUE),
+    average_safety_index = mean(Non_Weighted_Safety_Index, na.rm = TRUE),
+    average_vaccinated = mean(Vaccinated, na.rm = TRUE)
+  )
+
+#identifying the parties
+average_by_wave_dems$group <- 'Democrats'
+average_by_wave_repubs$group <- 'Republicans'
+
+#in order to 
+nonhh_by_wave_dems <- average_by_wave_dems %>% dplyr::select(data_collected_dates, average_num_cc_nonhh)
+nonhh_by_wave_repubs <- average_by_wave_repubs %>% dplyr::select(data_collected_dates, average_num_cc_nonhh)
+
+# Join the data frames by data_collected_dates
+average_diff <- left_join(nonhh_by_wave_dems, nonhh_by_wave_repubs, by = "data_collected_dates", suffix = c("_dems", "_repubs"))
+
+# Calculate the difference
+average_diff$average_diff = average_diff$average_num_cc_nonhh_repubs - average_diff$average_num_cc_nonhh_dems
+
+
+# Combine the data frames
+average_by_wave <- rbind(average_by_wave_dems, average_by_wave_repubs)
+
+average_by_wave
+```
+
+```{r}
+average_by_wave_plot <- ggplot(average_by_wave, aes(x = data_collected_dates, y = average_num_cc_nonhh, fill = group)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  scale_fill_manual(values = c("Democrats" = "blue", "Republicans" = "red")) +
+  theme_cowplot() +
+  labs(x = "Data Collected Dates", y = "Average Number of Non-Household Contacts",
+       title = "Average Non-Household Contacts by Party Over Time") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  theme(legend.position = "none")
+
+ggsave("non_hh_waves.png", plot = average_by_wave_plot, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Descriptives", width = 12, height = 8, units = "in")
+average_by_wave_plot
+```
+
+```{r}
+averagediff_by_wave_plot <- ggplot(average_diff, aes(x = data_collected_dates, y = average_diff, fill = "Difference")) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("Difference" = "purple")) +
+  theme_cowplot() +
+  labs(x = "Data Collected Dates", y = "Difference in Average Number of Non-Household Contacts Over Time", 
+       title = "Difference in Average Non-Household Contacts (Republicans - Democrats)") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  theme(legend.position = "none")
+
+ggsave("non_hh_diff_waves.png", plot = averagediff_by_wave_plot, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Descriptives", width = 12, height = 8, units = "in")
+
+averagediff_by_wave_plot
+```
+
+```{r}
+average_reduction_by_wave_plot <- ggplot(average_by_wave, aes(x = data_collected_dates, y = average_contact_reduction, fill = group)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  scale_fill_manual(values = c("Democrats" = "blue", "Republicans" = "red")) +
+  theme_cowplot() +
+  labs(x = "Data Collected Dates", y = "Average Stated Contact Reduction",
+       title = "Average Contact Reduction by Party Over Time") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  theme(legend.position = "none")
+
+ggsave("reduction_waves.png", plot = average_reduction_by_wave_plot, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Descriptives", width = 12, height = 8, units = "in")
+average_reduction_by_wave_plot
+```
+
+```{r}
+average_concern_by_wave_plot <- ggplot(average_by_wave, aes(x = data_collected_dates, y = average_concern, fill = group)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  scale_fill_manual(values = c("Democrats" = "blue", "Republicans" = "red")) +
+  theme_cowplot() +
+  labs(x = "Data Collected Dates", y = "Average Stated Concern",
+       title = "Average Stated Concern by Party Over Time") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  theme(legend.position = "none")
+
+ggsave("concern_waves.png", plot = average_concern_by_wave_plot, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Descriptives", width = 12, height = 8, units = "in")
+average_concern_by_wave_plot
+```
+
+```{r}
+average_masks_by_wave_plot <- ggplot(average_by_wave, aes(x = data_collected_dates, y = average_mask_usage, fill = group)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  scale_fill_manual(values = c("Democrats" = "blue", "Republicans" = "red")) +
+  theme_cowplot() +
+  labs(x = "Data Collected Dates", y = "Average Stated Concern",
+       title = "Average Mask Usage by Party Over Time") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  theme(legend.position = "none")
+
+ggsave("mask_waves.png", plot = average_masks_by_wave_plot, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Descriptives", width = 12, height = 8, units = "in")
+average_masks_by_wave_plot
+```
+
+
