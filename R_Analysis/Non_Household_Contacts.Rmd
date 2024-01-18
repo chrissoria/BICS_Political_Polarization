@@ -39,15 +39,22 @@ R_df <- R_df[R_df$Categorical_Dem_CD_County_Share != ""]
 1.6 means that Republicans are expected to have 1.6 times as many non-household contacts as Democrats, on average.
 
 ```{r}
-# Model for Wave 1
-contacts_R_v_D_w1 <- glm.nb(num_cc_nonhh ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNT_RUCC_CAT + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party, data = subset(df, wave == 2))
+# Model for Wave 2 (June 18-24, '20)
+contacts_R_v_D_w2 <- glm.nb(num_cc_nonhh ~  `rate_prev_6/14/20` + State_Government_Response_Index_11192020 + COUNT_RUCC_CAT + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party, data = subset(df, wave == 2))
 
-# Model for Wave 2
-contacts_R_v_D_w2 <- glm.nb(num_cc_nonhh ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNT_RUCC_CAT + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party, data = subset(df, wave == 4))
-# Model for Wave 3
-contacts_R_v_D_w3 <- glm.nb(num_cc_nonhh ~  COV_County_CMR_2020_06_20 + State_Government_Response_Index_11192020 + COUNT_RUCC_CAT + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party, data = subset(df, wave == 6))
+#model for Wave 3 (September 12-20, '20')
+contacts_R_v_D_w3 <- glm.nb(num_cc_nonhh ~ `rate_prev_9/9/20` + State_Government_Response_Index_11192020 + COUNT_RUCC_CAT + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party, data = subset(df, wave == 3))
 
-# Define a new function to extract both the coefficient and its standard error
+# Model for Wave 4 (December 1-7, '20')
+contacts_R_v_D_w4 <- glm.nb(num_cc_nonhh ~  `rate_prev_12/1/20` + State_Government_Response_Index_11192020 + COUNT_RUCC_CAT + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party, data = subset(df, wave == 4))
+
+#model for Wave 5 (February 9-14, '21')
+contacts_R_v_D_w5 <- glm.nb(num_cc_nonhh ~ `rate_prev_2/4/21` + State_Government_Response_Index_11192020 + COUNT_RUCC_CAT + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party, data = subset(df, wave == 5))
+
+# Model for Wave 6 (May 14-25, '21')
+contacts_R_v_D_w6 <- glm.nb(num_cc_nonhh ~  `rate_prev_5/12/21` + State_Government_Response_Index_11192020 + COUNT_RUCC_CAT + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party, data = subset(df, wave == 6))
+
+#function for extracting coeffs
 extract_coefficient_and_error <- function(model, coefficient_name) {
   estimate <- coef(summary(model))[coefficient_name, "Estimate"]
   std_error <- coef(summary(model))[coefficient_name, "Std. Error"]
@@ -56,35 +63,40 @@ extract_coefficient_and_error <- function(model, coefficient_name) {
        upper = exp(estimate + 1.96 * std_error))
 }
 
-# Extract coefficients and standard errors for each wave
-coeff_wave1 <- extract_coefficient_and_error(contacts_R_v_D_w1, "political_partyRepublican")
 coeff_wave2 <- extract_coefficient_and_error(contacts_R_v_D_w2, "political_partyRepublican")
 coeff_wave3 <- extract_coefficient_and_error(contacts_R_v_D_w3, "political_partyRepublican")
+coeff_wave4 <- extract_coefficient_and_error(contacts_R_v_D_w4, "political_partyRepublican")
+coeff_wave5 <- extract_coefficient_and_error(contacts_R_v_D_w5, "political_partyRepublican")
+coeff_wave6 <- extract_coefficient_and_error(contacts_R_v_D_w6, "political_partyRepublican")
 
-# Combine coefficients into a data frame
+# coef df
 coefficients_df <- data.frame(
-  Wave = factor(c(1, 2, 3)),
-  Coefficient = c(coeff_wave1$coefficient, coeff_wave2$coefficient, coeff_wave3$coefficient),
-  Lower = c(coeff_wave1$lower, coeff_wave2$lower, coeff_wave3$lower),
-  Upper = c(coeff_wave1$upper, coeff_wave2$upper, coeff_wave3$upper)
+  Wave = factor(c(2, 3, 4, 5, 6)),
+  Coefficient = c(coeff_wave2$coefficient, coeff_wave3$coefficient, coeff_wave4$coefficient, coeff_wave5$coefficient, coeff_wave6$coefficient),
+  Lower = c(coeff_wave2$lower, coeff_wave3$lower, coeff_wave4$lower, coeff_wave5$lower, coeff_wave6$lower),
+  Upper = c(coeff_wave2$upper, coeff_wave3$upper, coeff_wave4$upper, coeff_wave5$upper,coeff_wave6$upper)
 )
+dates = c("June '20", "September '20'", "December '20'","February '21'","May '21'")
 
-contacts_R_v_D_plot <- ggplot(coefficients_df, aes(x = Wave, y = Coefficient, shape = Wave)) +  # Add shape mapping to aes()
-  geom_point(position = position_dodge(width = 0.25), size = 3, color = "red") +
+contacts_R_v_D_plot <- ggplot(coefficients_df, aes(x = Wave, y = Coefficient, shape = Wave)) +
+  geom_point(position = position_dodge(width = 0.25), size = 5, color = "red") +
   geom_errorbar(aes(ymin = Lower, ymax = Upper), width = 0.1, position = position_dodge(width = 0.25), color = "red") +
-  scale_shape_manual(values = c(16, 15, 17),  # Define shapes for each wave
-                     labels = c("Wave 1", "Wave 2", "Wave 3")) +  # Custom labels for the legend
+  scale_shape_manual(values = c(16, 16, 16, 16, 16), labels = dates) +
   labs(title = "Wave-Specific Comparative Non-Household Contacts for Republicans During the Pandemic",
        subtitle = "Reference: Democrats",
        x = "Wave",
        y = "IRR",
-       shape = "Wave Shapes") +  # Label for the shape legend
+       shape = "Wave Shapes") +
   theme_minimal() +
-  theme(legend.position = "bottom")  # Adjust legend position
+  theme(legend.position = "bottom") +
+  geom_hline(yintercept = 1, linetype = "solid", color = "darkgray")
 
-print(summary(contacts_R_v_D_w1))
+
 print(summary(contacts_R_v_D_w2))
 print(summary(contacts_R_v_D_w3))
+print(summary(contacts_R_v_D_w4))
+print(summary(contacts_R_v_D_w5))
+print(summary(contacts_R_v_D_w6))
 
 rm(coeff_wave1,coeff_wave2,coeff_wave3,contacts_R_v_D_w1,contacts_R_v_D_w2,contacts_R_v_D_w3)
 # Print the plot

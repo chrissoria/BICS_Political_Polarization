@@ -12,6 +12,8 @@ library(dplyr)
 
 ```{r}
 D_df$data_collected_dates <- factor(D_df$data_collected_dates, levels = c("June 18-24, '20", "September 12-20, '20'", "December 1-7, '20'","February 9-14, '21'","May 14-25, '21'"))  
+
+R_df$data_collected_dates <- factor(R_df$data_collected_dates, levels = c("June 18-24, '20", "September 12-20, '20'", "December 1-7, '20'","February 9-14, '21'","May 14-25, '21'"))  
 ```
 
 
@@ -130,4 +132,37 @@ ggsave("mask_waves.png", plot = average_masks_by_wave_plot, path = "/Users/chris
 average_masks_by_wave_plot
 ```
 
+```{r}
+average_vaccination_plot <- average_by_wave %>% 
+  filter(data_collected_dates == "May 14-25, '21'") %>% 
+  ggplot(aes(x = data_collected_dates, y = average_vaccinated, fill = group)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  scale_fill_manual(values = c("Democrats" = "blue", "Republicans" = "red")) +
+  theme_cowplot() +
+  labs(x = "Data Collected Dates", y = "Average Vaccination Rate",
+       title = "Average Vaccination Rate by Party") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  theme(legend.position = "none")
+
+ggsave("vaccination.png", plot = average_vaccination_plot, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Descriptives", width = 12, height = 8, units = "in")
+average_vaccination_plot
+```
+
+```{r}
+rm(average_by_wave_dems, average_by_wave_repubs, nonhh_by_wave_dems, nonhh_by_wave_repubs)
+```
+
+How many people have data on school closures by wave?
+Using the fall data would lose us relatively few cases
+The Spring data, on the other hand, is much more sparse
+```{r}
+na_counts_by_wave <- df %>%
+  group_by(wave) %>%
+  summarise(
+    na_count_fall = sum(is.na(fall2020_school_closures)),
+    na_count_spring = sum(is.na(spring2021_school_closures))
+  )
+
+na_counts_by_wave
+```
 
