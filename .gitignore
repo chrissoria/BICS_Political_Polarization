@@ -1,5 +1,8 @@
 /data
 /notes
 .Rproj.user
-/R_analysis
-/model_tests
+.DS_Store
+.RData
+.Rhistory
+plots/.DS_Store
+*.swp
