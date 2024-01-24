@@ -8,3 +8,4 @@ plots/.DS_Store
 *.swp
 /R_Analysis
 /model_tests
+/.ipynb_checkpoints
