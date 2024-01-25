@@ -1,0 +1,442 @@
+---
+title: "Comparison"
+author: "Christopher Soria"
+date: "2024-01-24"
+output: html_document
+---
+```{r}
+library(dplyr)
+library(tidyverse)
+library(data.table)
+```
+switch between manual and combined
+```{r}
+file_type <- "manual"
+```
+First, I'll read in the different waves seperately 
+The two files have the same row count but different columns (225 in manual versus 62 in merged)
+```{r}
+if (file_type == "manual") {
+  df_w2 <- readRDS('/Users/chrissoria/Documents/Research/BICS/bics-data/data/lucid-pipeline/national_wave2_unweighted.rds')
+  df_w3 <- readRDS('/Users/chrissoria/Documents/Research/BICS/bics-data/data/lucid-pipeline/national_wave3_unweighted.rds')
+  df_w4 <- readRDS('/Users/chrissoria/Documents/Research/BICS/bics-data/data/lucid-pipeline/national_wave4_unweighted.rds')
+  df_w5 <- readRDS('/Users/chrissoria/Documents/Research/BICS/bics-data/data/lucid-pipeline/national_wave5_unweighted.rds')
+  df_w6 <- readRDS('/Users/chrissoria/Documents/Research/BICS/bics-data/data/lucid-pipeline/national_wave6_unweighted.rds')
+  
+  if("resp_employ" %in% names(df_w2)) {
+  df_w2$resp_employ <- as.character(df_w2$resp_employ)
+  }
+
+  if("resp_employ" %in% names(df_w3)) {
+  df_w3$resp_employ <- as.character(df_w3$resp_employ)
+  }
+
+  if("resp_employ" %in% names(df_w4)) {
+  df_w4$resp_employ <- as.character(df_w4$resp_employ)
+  }
+
+  if("resp_employ" %in% names(df_w5)) {
+  df_w5$resp_employ <- as.character(df_w5$resp_employ)
+  }
+
+  if("resp_employ" %in% names(df_w6)) {
+  df_w6$resp_employ <- as.character(df_w6$resp_employ)
+  }
+
+  df_w2$resp_occupation <- as.character(df_w2$resp_occupation)
+  df_w4$resp_occupation <- as.character(df_w4$resp_occupation)
+
+  df <- bind_rows(df_w2, df_w3, df_w4, df_w5, df_w6)
+  rm(df_w2, df_w3, df_w4, df_w5, df_w6)
+  
+} else if (file_type == "merged") {
+  df <- readRDS('/Users/chrissoria/Documents/Research/BICS/bics-data/data/lucid-pipeline/df_all_waves.rds')
+
+  df <- df %>% 
+    filter(wave > 1)
+  
+} else {
+  print("change file_type to either manual or merged")
+}
+
+names(df) <- make.unique(names(df))
+
+  df <- df %>% 
+  filter(city == "National")
+```
+Assigning dates to waves
+```{r}
+df <- df %>%
+  mutate(data_collected_dates = case_when(
+    wave == 2 ~ "June 18-24, '20",
+    wave == 3 ~ "September 12-20, '20'",
+    wave == 4 ~ "December 1-7, '20'",
+    wave == 5 ~ "February 9-14, '21'",
+    wave == 6 ~ "May 14-25, '21'",
+    TRUE ~ as.character(NA)  # Equivalent to np.nan in Python
+  ))
+
+df$data_collected_dates <- factor(df$data_collected_dates, levels = c("June 18-24, '20", "September 12-20, '20'", "December 1-7, '20'","February 9-14, '21'","May 14-25, '21'"))  
+
+print(table(df$data_collected_dates))
+print(table(df$wave))
+```
+We're missing a "conservative" but we have two moderates?
+```{r}
+political_view_mapping <- c(
+  'Extremely conservative' = 1,
+  'Slightly conservative' = 2,
+  'Moderate' = 3,
+  'Middle of the road' = 4,
+  'Slightly liberal' = 5,
+  'Liberal' = 6,
+  'Extremely liberal' = 7
+)
+
+df <- df %>%
+  mutate(political_view_numeric = unlist(map(political_view, ~ political_view_mapping[.])))
+
+print(table(df$political_view))
+```
+creating the education, race, and employed variables (merged file has no employment variable)
+```{r}
+if (file_type == "manual"){
+df <- df %>%
+  mutate(educ_group = case_when(
+    resp_educ == "Less than high school degree" ~ "Less than high school",
+    resp_educ %in% c("High school graduate (high school diploma or equivalent including GED)", 
+                     "Some college but no degree", 
+                     "Associate degree in college (2-year)") ~ "High school graduate",
+    resp_educ %in% c("Bachelor's degree in college (4-year)", 
+                     "Master's degree", 
+                     "Doctoral degree", 
+                     "Professional degree (JD, MD)") ~ "College graduate and above",
+    TRUE ~ "Unknown"
+  ))
+
+# Print the counts of unique values in educ_group
+print(table(df$educ_group, useNA = "ifany"))
+
+race_columns <- grep("^resp_race_", names(df), value = TRUE)
+df[race_columns] <- lapply(df[race_columns], function(x) replace(x, is.na(x), 0))
+
+df <- df %>%
+  mutate(r_race = case_when(
+    resp_race_1 == "White" ~ "White",
+    resp_race_2 == "Black or African American" ~ "Black",
+    resp_race_4 == "Asian" ~ "Asian",
+    TRUE ~ "Other / Mixed"
+  ))
+
+# Print the counts of unique values in r_race
+print(table(df$r_race, useNA = "ifany"))
+
+employment_columns <- grep("^resp_employ_", names(df), value = TRUE)
+df[employment_columns] <- lapply(df[employment_columns], function(x) replace(x, is.na(x), 0))
+
+#this will not work because there are no employment variables in the merged file
+df <- df %>%
+  mutate(r_working = if_else(industry == "I don't work", "Not Working", "Working"))
+
+# Print the counts of unique values in r_working
+print(table(df$r_working, useNA = "ifany"))
+
+} else if (file_type == "merged"){
+  df$educ_group <- df$educ
+  df$r_race <- df$w_race
+  #there's no employment variable in the merged data
+}
+```
+dependent binary variables
+```{r}
+df <- df %>%
+  mutate(
+    binary_concern = case_when(
+      covid19_concern %in% c("Somewhat concerned", "Very concerned") ~ 1L,
+      !is.na(covid19_concern) ~ 0L,
+      TRUE ~ NA_integer_
+    ),
+    binary_concern_strong = case_when(
+      covid19_concern == "Very concerned" ~ 1L,
+      !is.na(covid19_concern) ~ 0L,
+      TRUE ~ NA_integer_
+    ),
+    contact_reduction = case_when(
+      covid19_f2fchange == "I have greatly reduced face-to-face interaction with others" ~ 1L,
+      !is.na(covid19_f2fchange) ~ 0L,
+      TRUE ~ NA_integer_
+    )
+  )
+```
+manual merge = 27,937, already merged = 69,135
+```{r}
+if (file_type == "manual") {
+  df_w2_nonhhalters <- readRDS('/Users/chrissoria/Documents/Research/BICS/bics-data/data/lucid-pipeline/national_alters_nonhh_wave2_unweighted.rds')
+  df_w3_nonhhalters <- readRDS('/Users/chrissoria/Documents/Research/BICS/bics-data/data/lucid-pipeline/national_alters_nonhh_wave3_unweighted.rds')
+  df_w4_nonhhalters <- readRDS('/Users/chrissoria/Documents/Research/BICS/bics-data/data/lucid-pipeline/national_alters_nonhh_wave4_unweighted.rds')
+  df_w5_nonhhalters <- readRDS('/Users/chrissoria/Documents/Research/BICS/bics-data/data/lucid-pipeline/national_alters_nonhh_wave5_unweighted.rds')
+  df_w6_nonhhalters <- readRDS('/Users/chrissoria/Documents/Research/BICS/bics-data/data/lucid-pipeline/national_alters_nonhh_wave6_unweighted.rds')
+  
+  df_alters_combined <- rbind(df_w2_nonhhalters, df_w3_nonhhalters, df_w4_nonhhalters, df_w5_nonhhalters, df_w6_nonhhalters)
+  rm(df_w2_nonhhalters, df_w3_nonhhalters, df_w4_nonhhalters, df_w5_nonhhalters, df_w6_nonhhalters)
+} else if (file_type == "merged") {
+  df_alters_combined <- readRDS('/Users/chrissoria/Documents/Research/BICS/bics-data/data/lucid-pipeline/df_alters_all_waves.rds')
+}
+```
+Now I'll calculate the proportion of contacts carried out with masks (the merged file doesn't have this)
+```{r}
+if (file_type == "manual") {
+df_alters_combined <- df_alters_combined %>%
+  mutate(
+    Mask_Used = as.integer(protection_1 == "Wear a face mask" |
+                           protection_2 == "Wear a face mask" |
+                           protection_3 == "Wear a face mask" |
+                           protection_4 == "Wear a face mask"),
+    Gloves_Used = as.integer(protection_1 == "Wear gloves" |
+                             protection_2 == "Wear gloves" |
+                             protection_3 == "Wear gloves" |
+                             protection_4 == "Wear gloves"),
+    Other_Protective_Equipment_Used = as.integer(protection_1 == "Wear other protective equipment" |
+                                                  protection_2 == "Wear other protective equipment" |
+                                                  protection_3 == "Wear other protective equipment" |
+                                                  protection_4 == "Wear other protective equipment")
+  )
+
+df_aggregated <- df_alters_combined %>%
+  group_by(rid) %>%
+  summarise(
+    Total_Masks_Used = sum(Mask_Used, na.rm = TRUE),
+    Total_Gloves_Used = sum(Gloves_Used, na.rm = TRUE),
+    Total_Other_Protective_Equipment_Used = sum(Other_Protective_Equipment_Used, na.rm = TRUE),
+    Contacts = n()
+  ) %>%
+  mutate(
+    Norm_Masks_Used = Total_Masks_Used / Contacts,
+    Norm_Gloves_Used = Total_Gloves_Used / Contacts,
+    Norm_Other_Protective_Equipment_Used = Total_Other_Protective_Equipment_Used / Contacts,
+    Non_Weighted_Safety_Index = (Norm_Masks_Used + Norm_Gloves_Used + Norm_Other_Protective_Equipment_Used) / 3,
+    Weighted_Safety_Index = (Norm_Masks_Used + Norm_Gloves_Used + Norm_Other_Protective_Equipment_Used) / (3 * Contacts)
+  )
+
+df = left_join(df, df_aggregated, by = "rid")
+} else if (file_type == "merged") {
+  df = left_join(df, df_alters_combined, by = "rid")
+  print("The merged file doesn't have information on mask usage")
+}
+```
+Now let's merge in the ZIP features file
+```{r}
+ZIP_FEATURES <- fread('/Users/chrissoria/Documents/Research/BICS_Political_Polarization/data/ZIP_Features.csv', colClasses = c(ZIP = "character", CD = "character", COUNTY_FIPS = "character", STATE_FIPS = "character", CONGRESSPERSON_PARTY = "character"))
+```
+getting df ready to merge to ZIP_FEATURES
+merged file questions:
+Why are there duplicates w_gender and gender, for example?
+No nativity (US-born vs not), no resp_hhsize,lefthome_num, policy_sip (), health insurance, wave is called wave.x, city is called city.x
+```{r}
+if (file_type == "manual") {
+df <- rename(df, ZIP = resp_zip)
+
+names(df) <- make.unique(names(df))
+
+# Trim whitespace from ZIP column
+df$ZIP <- trimws(df$ZIP)
+
+columns_to_keep <- c('ResponseId','StartDate','resp_yob','resp_sex','resp_hispanic','r_race','resp_nativity','ZIP',
+                     'resp_hhsize','r_working','resp_occupation','lefthome_num','num_cc_nonhh',
+                     'lefthome_where_1','lefthome_where_2','lefthome_where_3','lefthome_where_4','lefthome_where_10',
+                     'lefthome_where_8','lefthome_where_9','lefthome_where_5','lefthome_where_11','lefthome_where_6',
+                     'lefthome_where_7','inet_freq','covid19_familiar','covid19_concern',
+                     'covid19_f2fchange','covid19_reduceOK','policy_sip','age','hhi','political_party','political_view',
+                     'industry','health_insurance','interview_date','wave','agecat','city','covid19_vax','covid19_whynot_vax',
+                     'Non_Weighted_Safety_Index','Weighted_Safety_Index','Norm_Masks_Used','educ_group','contact_reduction',
+                     'binary_concern','binary_concern_strong','resp_educ','Contacts',
+                     'data_collected_dates')
+
+df <- df[columns_to_keep]
+
+} else if (file_type == "merged") {
+  df <- rename(df, ZIP = zip)
+  df$ZIP <- trimws(df$ZIP)
+  
+  columns_to_keep <- c('ResponseId','age','gender','hispanic','w_race','ZIP',
+                     'num_cc_nonhh','covid19_familiar','covid19_concern',
+                     'covid19_f2fchange','covid19_reduceOK','hhi','political_party','political_view',
+                     'wave.x','agecat','city.x','covid19_vax','covid19_whynot_vax',
+                     'educ_group','contact_reduction',
+                     'binary_concern','binary_concern_strong','educ','data_collected_dates')
+  
+  df <- df[columns_to_keep]
+}
+```
+merging zip features to bics
+```{r}
+bics_zip_features <- left_join(df, ZIP_FEATURES, by = "ZIP")
+
+bics_zip_features <- bics_zip_features %>% 
+  distinct(ResponseId, .keep_all = TRUE)
+```
+How many matches do we get?
+Why is this slightly different than the python script?
+```{r}
+bics_zip_features %>%
+  summarise(
+    Num_Missing_ZIP = sum(is.na(ZIP)),
+    Pct_Missing_ZIP = mean(is.na(ZIP)) * 100,
+    Pct_ZIP_5_Characters = mean(nchar(as.character(ZIP)) == 5) * 100,
+    state_Missing = sum(is.na(bics_zip_features$USPS_STATE)),
+    Pct_State_Missing = mean(!is.na(bics_zip_features$USPS_STATE)) * 100
+    
+  ) %>%
+  print()
+```
+what about school closures?
+About 9 percent of people have a missing school matched to their ZIP
+But lots of missingess for the spring 2021
+```{r}
+bics_zip_features %>%
+  summarise(
+    Num_Missing_earlyfall2020 = sum(is.na(earlyfall2020_school_closures)),
+    Pct_Missing_earlyfall2020 = mean(is.na(earlyfall2020_school_closures)) * 100,
+    Num_Missing_fall2020 = sum(is.na(fall2020_school_closures)),
+    Pct_Missing_fall2020 = mean(is.na(fall2020_school_closures)) * 100,
+    Num_Missing_spring2021 = sum(is.na(spring2021_school_closures)),
+    Pct_Missing_spring2021 = mean(is.na(spring2021_school_closures)) * 100
+  ) %>%
+  print()
+```
+```{r}
+bics_zip_features <- bics_zip_features %>%
+  mutate(CONGRESSPERSON_PARTY = ifelse(CONGRESSPERSON_PARTY == "", NA_character_,
+                     ifelse(CONGRESSPERSON_PARTY == " ", NA_character_, CONGRESSPERSON_PARTY)))
+
+bics_zip_features <- bics_zip_features %>%
+  mutate(political_party_to_CD = ifelse(!is.na(CONGRESSPERSON_PARTY), 
+                                        paste(political_party, "in", CONGRESSPERSON_PARTY, "led CD"), 
+                                        NA_character_))
+
+# Print the specified columns of the updated DataFrame
+print(bics_zip_features[, c("political_party", "CONGRESSPERSON_PARTY", "political_party_to_CD")])
+
+bics_zip_features <- bics_zip_features %>%
+  mutate(political_party_to_CD = ifelse(political_party == "Prefer not to answer", NA_character_, political_party_to_CD))
+
+print(table(bics_zip_features$CONGRESSPERSON_PARTY, useNA = "always"))
+print(table(bics_zip_features$political_party_to_CD, useNA = "always"))
+```
+generating binary variables for whether someone is in an opposing party CD (to observe potential general effects), vaccinated binaries, and Independent
+```{r}
+bics_zip_features <- bics_zip_features %>%
+  mutate(
+    In_Opposing_Party_CD = as.integer(political_party != CONGRESSPERSON_PARTY & !is.na(CONGRESSPERSON_PARTY) & political_party != "Prefer not to answer"),
+    Independent = as.integer(political_party == "Independent"),
+    Vaccinated = case_when(
+      covid19_vax == "Yes, I have received at least one dose of a vaccine" ~ 1L,
+      covid19_vax == "No, I have not" ~ 0L,
+      TRUE ~ NA_integer_
+    )
+  )
+
+# Print the counts of unique values in In_Opposing_Party_CD column
+print(table(bics_zip_features$In_Opposing_Party_CD, useNA = "ifany"))
+
+# Print the counts of unique values in political_party column
+print(table(bics_zip_features$political_party, useNA = "ifany"))
+
+# Print the counts of unique values in CONGRESSPERSON_PARTY column
+print(table(bics_zip_features$CONGRESSPERSON_PARTY, useNA = "ifany"))
+
+```
+Next, I'm creating categorical variables based on percentage of the county voting a certain way
+```{r}
+bics_zip_features <- bics_zip_features %>%
+  mutate(
+    Categorical_Trump_County_Share = case_when(
+      trump_percentage_won < 33.1 ~ "Less Than a Third",
+      trump_percentage_won < 66.1 ~ "Less than Two Thirds Greater Than One Third",
+      trump_percentage_won >= 66.1 ~ "Greater than or Equal to Two thirds",
+      TRUE ~ NA_character_
+    ),
+    Categorical_Biden_County_Share = case_when(
+      biden_percentage_won < 33.1 ~ "Less Than a Third",
+      biden_percentage_won < 66.1 ~ "Less than Two Thirds Greater Than One Third",
+      biden_percentage_won >= 66.1 ~ "Greater than or Equal to Two thirds",
+      TRUE ~ NA_character_
+    ),
+    Percentage_Trump_Greater_Than_Two_Thirds = case_when(
+      trump_percentage_won >= 66.1 ~ 1L,
+      trump_percentage_won < 66.1 ~ 0L,
+      TRUE ~ NA_integer_
+    ),
+    Percentage_Trump_Less_Than_Two_Thirds = case_when(
+      trump_percentage_won < 66.1 ~ 1L,
+      trump_percentage_won <= 66.1 ~ 0L,
+      TRUE ~ NA_integer_
+    ),
+    Percentage_Biden_Greater_Than_Two_Thirds = case_when(
+      biden_percentage_won >= 66.1 ~ 1L,
+      biden_percentage_won < 66.1 ~ 0L,
+      TRUE ~ NA_integer_
+    ),
+    Percentage_Biden_Less_Than_Two_Thirds = case_when(
+      biden_percentage_won < 66.1 ~ 1L,
+      biden_percentage_won <= 66.1 ~ 0L,
+      TRUE ~ NA_integer_
+    )
+  )
+print(table(bics_zip_features$Categorical_Trump_County_Share))
+print(table(bics_zip_features$Categorical_Biden_County_Share))
+```
+And also based on CD
+```{r}
+bics_zip_features <- bics_zip_features %>%
+  mutate(
+    Categorical_Repub_CD_County_Share = case_when(
+      CD_PERCENT_REPUBLICAN < 0.25 ~ "Less Than a Quarter",
+      CD_PERCENT_REPUBLICAN < 0.50 & CD_PERCENT_REPUBLICAN > 0.25 ~ "Two Quarters",
+      CD_PERCENT_REPUBLICAN < 0.75 & CD_PERCENT_REPUBLICAN > 0.50 ~ "Three Quarters",
+      CD_PERCENT_REPUBLICAN >= 0.75 ~ "Greater than or Equal to Three Quarters",
+      TRUE ~ NA_character_
+    ),
+    Categorical_Dem_CD_County_Share = case_when(
+      CD_PERCENT_DEMOCRAT < 0.25 ~ "Less Than a Quarter",
+      CD_PERCENT_DEMOCRAT < 0.50 ~ "Two Quarters",
+      CD_PERCENT_DEMOCRAT < 0.75 ~ "Three Quarters",
+      CD_PERCENT_DEMOCRAT >= 0.75 ~ "Greater than or Equal to Three Quarters",
+      TRUE ~ NA_character_
+    )
+  )
+
+# Print the counts of unique values in Categorical_Repub_CD_County_Share column
+print(table(bics_zip_features$Categorical_Repub_CD_County_Share, useNA = "ifany"))
+```
+Next, let's add a variable that treats urban and rural as a binary.
+1 = Metro - Counties in metro areas of 1 million population or more
+2 = Metro - Counties in metro areas of 250,000 to 1 million population \
+3 = Metro - Counties in metro areas of fewer than 250,000 population
+4 = Nonmetro - Urban population of 20,000 or more, adjacent to a metro area
+5 = Nonmetro - Urban population of 20,000 or more, not adjacent to a metro area
+6 = Nonmetro - Urban population of 2,500 to 19,999, adjacent to a metro area
+7 = Nonmetro - Urban population of 2,500 to 19,999, not adjacent to a metro area
+8 = Nonmetro - Completely rural or less than 2,500 urban population, adjacent to a metro area
+9 = Nonmetro - Completely rural or less than 2,500 urban population, not adjacent to a metro area
+```{r}
+bics_zip_features <- bics_zip_features %>%
+  mutate(
+    COUNT_RUCC_CAT = case_when(
+      COUNTY_RUCC_2013 %in% c(1, 2) ~ "Urban Metro",
+      COUNTY_RUCC_2013 %in% 3:7 ~ "Urban Nonmetro",
+      COUNTY_RUCC_2013 %in% c(8, 9) ~ "Rural",
+      TRUE ~ NA_character_
+    ),
+    COUNT_RUCC_BINARY = case_when(
+      COUNTY_RUCC_2013 %in% 1:7 ~ "Urban",
+      COUNTY_RUCC_2013 %in% c(8, 9) ~ "Rural",
+      TRUE ~ NA_character_
+    )
+  )
+```
+
+```{r}
+rm(df, df_alters_combined, ZIP_FEATURES, columns_to_keep, employment_columns, political_view_mapping, race_columns, df_aggregated)
+```
+
