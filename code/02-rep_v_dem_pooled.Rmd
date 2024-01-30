@@ -1,0 +1,48 @@
+---
+title: "02-Republican_v_Democrat_Overall"
+author: "Christopher Soria"
+date: "2024-01-30"
+output: html_document
+---
+```{r}
+library(sjPlot)
+```
+
+
+First, I want to find out who was more likely to say that they reduced contact throughout the pandemic
+```{r}
+rvd_contact_reduction_model <- glm(contact_reduction ~  `rate_prev_6/14/20` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party, 
+                                   data = bics_zip_features, 
+                                   family = binomial,
+                                   weights = weight_pooled)
+
+
+rvd_contact_reduction_plot <- plot_model(
+  rvd_contact_reduction_model,
+  colors = "black",
+  type = "pred",
+  auto.label = FALSE,
+  terms = c("political_party[all]"),
+  title = "Partisan Differences in Contact Reduction Across Opposing \nParty Districts",
+  axis.title = c("", "Predicted Contact Reduction")
+) +
+theme_minimal() +
+  theme(
+    legend.position = "none",
+    axis.text.y = element_text(size = 20), 
+    axis.title.y = element_text(size = 20), 
+    axis.text.x = element_text(size = 14), 
+    axis.title.x = element_text(size = 14),  
+    plot.title = element_text(size = 28, face = "bold"), 
+    plot.subtitle = element_text(size = 15)
+  ) +
+  geom_point(size = 5) 
+
+ggsave("rvd_contact_reduction.png", plot = rvd_contact_reduction_plot, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Contact_Reduction", width = 12, height = 8, units = "in")
+
+print(rvd_contact_reduction_model)
+rvd_contact_reduction_plot
+
+rm(rvd_contact_reduction_model,dvr_pred_plot)
+```
+

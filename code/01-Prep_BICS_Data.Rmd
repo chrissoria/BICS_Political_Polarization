@@ -49,6 +49,16 @@ if (file_type == "manual") {
   df <- bind_rows(df_w2, df_w3, df_w4, df_w5, df_w6)
   rm(df_w2, df_w3, df_w4, df_w5, df_w6)
   
+  df_merged <- readRDS('/Users/chrissoria/Documents/Research/BICS/bics-data/data/lucid-pipeline/df_all_waves.rds')
+
+  df_merged <- df_merged %>% 
+    filter(wave > 1)
+  
+  df$weight_pooled <- df_merged$weight_pooled
+  df$weight_city <- df_merged$weight_city
+  
+  rm(df_merged)
+  
 } else if (file_type == "merged") {
   df <- readRDS('/Users/chrissoria/Documents/Research/BICS/bics-data/data/lucid-pipeline/df_all_waves.rds')
 
@@ -61,8 +71,9 @@ if (file_type == "manual") {
 
 names(df) <- make.unique(names(df))
 
-  df <- df %>% 
-  filter(city == "National")
+#deleting this for now and instead using city dummies
+#df <- df %>% 
+  #filter(city == "National")
 ```
 Assigning dates to waves
 ```{r}
@@ -250,7 +261,7 @@ columns_to_keep <- c('ResponseId','StartDate','resp_yob','resp_sex','resp_hispan
                      'industry','health_insurance','interview_date','wave','agecat','city','covid19_vax','covid19_whynot_vax',
                      'Non_Weighted_Safety_Index','Weighted_Safety_Index','Norm_Masks_Used','educ_group','contact_reduction',
                      'binary_concern','binary_concern_strong','resp_educ','Contacts',
-                     'data_collected_dates')
+                     'data_collected_dates','weight_pooled')
 
 df <- df[columns_to_keep]
 
@@ -319,6 +330,9 @@ print(bics_zip_features[, c("political_party", "CONGRESSPERSON_PARTY", "politica
 
 bics_zip_features <- bics_zip_features %>%
   mutate(political_party_to_CD = ifelse(political_party == "Prefer not to answer", NA_character_, political_party_to_CD))
+
+bics_zip_features <- bics_zip_features %>%
+  mutate(political_party_to_CD = ifelse(is.na(political_party_to_CD), "unknown party or CD", political_party_to_CD))
 
 print(table(bics_zip_features$CONGRESSPERSON_PARTY, useNA = "always"))
 print(table(bics_zip_features$political_party_to_CD, useNA = "always"))
@@ -438,5 +452,40 @@ bics_zip_features <- bics_zip_features %>%
 
 ```{r}
 rm(df, df_alters_combined, ZIP_FEATURES, columns_to_keep, employment_columns, political_view_mapping, race_columns, df_aggregated)
+```
+Making the column names unique (in case i merged in duplicate columns somehow)
+```{r}
+names(bics_zip_features) <- make.unique(names(bics_zip_features))
+```
+Making the percent of congressional district that voted a certain way be a categorical variable and setting the reference category
+```{r}
+bics_zip_features$Categorical_Dem_CD_County_Share <- factor(
+  bics_zip_features$Categorical_Dem_CD_County_Share,
+  levels = c("Greater than or Equal to Three Quarters", "Three Quarters", "Two Quarters", "Less Than a Quarter"),
+  ordered = FALSE
+)
+
+bics_zip_features$Categorical_Repub_CD_County_Share <- factor(
+  bics_zip_features$Categorical_Repub_CD_County_Share,
+  levels = c("Greater than or Equal to Three Quarters", "Three Quarters", "Two Quarters", "Less Than a Quarter"),
+  ordered = FALSE
+)
+```
+Pulling out party-specific datasets 
+```{r}
+RD_df <- bics_zip_features[bics_zip_features$political_party %in% c("Republican", "Democrat"), ]
+D_df <- subset(bics_zip_features, political_party == "Democrat")
+R_df <- subset(bics_zip_features, political_party == "Republican")
+
+D_df <- subset(D_df, !is.na(D_df$Categorical_Repub_CD_County_Share))
+R_df <- subset(R_df, !is.na(R_df$Categorical_Dem_CD_County_Share))
+```
+
+
+```{r}
+write_csv(bics_zip_features, "../data/BICS_ZIP_Features.csv")
+write_csv(RD_df, "../data/RD_BICS_ZIP_Features.csv")
+write_csv(D_df, "../data/D_BICS_ZIP_Features.csv")
+write_csv(R_df, "../data/R_BICS_ZIP_Features.csv")
 ```
 
