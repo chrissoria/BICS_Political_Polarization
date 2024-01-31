@@ -471,6 +471,12 @@ bics_zip_features$Categorical_Repub_CD_County_Share <- factor(
   ordered = FALSE
 )
 ```
+We might want to control for city samples, so let's pull out some dummies
+```{r}
+bics_zip_features$city <- as.factor(bics_zip_features$city) # Ensure 'city' is a factor
+dummy_city <- model.matrix(~ city - 1, data = bics_zip_features) # Create dummy variables
+bics_zip_features <- cbind(bics_zip_features, dummy_city)
+```
 Pulling out party-specific datasets 
 ```{r}
 RD_df <- bics_zip_features[bics_zip_features$political_party %in% c("Republican", "Democrat"), ]
@@ -480,7 +486,6 @@ R_df <- subset(bics_zip_features, political_party == "Republican")
 D_df <- subset(D_df, !is.na(D_df$Categorical_Repub_CD_County_Share))
 R_df <- subset(R_df, !is.na(R_df$Categorical_Dem_CD_County_Share))
 ```
-
 
 ```{r}
 write_csv(bics_zip_features, "../data/BICS_ZIP_Features.csv")

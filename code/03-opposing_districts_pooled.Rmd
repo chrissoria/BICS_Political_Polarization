@@ -1,0 +1,146 @@
+---
+title: "03-opposing_districts_pooled"
+author: "Christopher Soria"
+date: "2024-01-31"
+output: html_document
+---
+How do partisans change their perceptions on the severity of the pandemic depending on congressional district context?
+```{r}
+cd_contact_reduction_model <- glm(contact_reduction ~  `rate_prev_6/14/20` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party_to_CD, 
+                                   data = bics_zip_features, 
+                                   family = binomial,
+                                   weights = weight_pooled)
+
+print(summary(cd_contact_reduction_model))
+
+cd_contact_reduction_plot <- plot_model(
+  cd_contact_reduction_model,
+  colors = "black",
+  type = "pred",
+  auto.label = FALSE,
+  terms = c("political_party_to_CD[Democrat in Democratic led CD, Democrat in Republican led CD, Republican in Democratic led CD, Republican in Republican led CD]"),
+  title = "Partisan Differences in Stated Contact Reduction Across \nOpposing Party Districts",
+  axis.title = c("", "Predicted Probability of Contact Reduction")
+) +
+theme_minimal() +
+  theme(
+    legend.position = "none",
+    axis.text.y = element_text(size = 20), 
+    axis.title.y = element_text(size = 20), 
+    axis.text.x = element_text(size = 14), 
+    axis.title.x = element_text(size = 14),  
+    plot.title = element_text(size = 28, face = "bold"), 
+    plot.subtitle = element_text(size = 15)
+  ) +
+  geom_point(size = 5) 
+
+ggsave("cd_contact_reduction_pooled.png", plot = cd_contact_reduction_plot, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Contact_Reduction", width = 12, height = 8, units = "in")
+
+cd_contact_reduction_plot
+
+rm(cd_contact_reduction_model, cd_contact_reduction_plot)
+```
+How does their concern about the spread of the virus 
+```{r}
+cd_concern_model <- glm(binary_concern_strong ~  `rate_prev_6/14/20` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party_to_CD, 
+                                   data = bics_zip_features, 
+                                   family = binomial,
+                                   weights = weight_pooled)
+
+print(summary(cd_concern_model))
+
+cd_concern_plot <- plot_model(
+  cd_concern_model,
+  colors = "black",
+  type = "pred",
+  auto.label = FALSE,
+  terms = c("political_party_to_CD[Democrat in Democratic led CD, Democrat in Republican led CD, Republican in Democratic led CD, Republican in Republican led CD]"),
+  title = "Partisan Differences in Concern about Spread of the Virus \nAcross Opposing Party Districts",
+  axis.title = c("", "Predicted Probability of Concern of Spread")
+) +
+theme_minimal() +
+  theme(
+    legend.position = "none",
+    axis.text.y = element_text(size = 20), 
+    axis.title.y = element_text(size = 20), 
+    axis.text.x = element_text(size = 14), 
+    axis.title.x = element_text(size = 14),  
+    plot.title = element_text(size = 28, face = "bold"), 
+    plot.subtitle = element_text(size = 15)
+  ) +
+  geom_point(size = 5) 
+
+ggsave("cd_concern_pooled.png", plot = cd_concern_plot, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Concern", width = 12, height = 8, units = "in")
+
+cd_concern_plot
+
+rm(cd_concern_model, cd_concern_plot)
+```
+
+How do partisans change their behavior depending on congressional district context?
+This difference becomes a little 
+```{r}
+cd_contact_model <- glm.nb(num_cc_nonhh ~  `rate_prev_11/20/20` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party_to_CD+ cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta, 
+                           data = bics_zip_features,
+                           weights = weight_pooled)
+
+cd_contact_plot <- plot_model(
+  cd_contact_model,
+  colors = "black",
+  type = "pred",
+  auto.label = FALSE,
+  terms = c("political_party_to_CD[Democrat in Democratic led CD, Democrat in Republican led CD, Republican in Democratic led CD, Republican in Republican led CD]"),
+  title = "Partisan Differences in Non-Household Contacts Across \nOpposing Party Districts",
+  axis.title = c("", "Predicted Contacts")
+) +
+theme_minimal() +
+  theme(
+    legend.position = "none",
+    axis.text.y = element_text(size = 20), 
+    axis.title.y = element_text(size = 20), 
+    axis.text.x = element_text(size = 14), 
+    axis.title.x = element_text(size = 14),  
+    plot.title = element_text(size = 28, face = "bold"), 
+    plot.subtitle = element_text(size = 15)
+  ) +
+  geom_point(size = 5) 
+
+ggsave("cd_contact_pooled.png", plot = cd_contact_plot, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Contacts", width = 12, height = 8, units = "in")
+
+cd_contact_plot
+
+rm(cd_contact_model, cd_contact_plot)
+```
+What about mask usage?
+```{r}
+cd_masked_contact_model <- lm(Norm_Masks_Used ~  `rate_prev_11/20/20` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party_to_CD, 
+                              data = df,
+                              weights = weight_pooled)
+
+mask_pred_plot <- plot_model(
+  dvr_masked_contact_model,
+  colors = "black",
+  type = "pred",
+  auto.label = FALSE,
+  terms = c("political_party_to_CD[Democrat in Democratic led CD, Democrat in Republican led CD, Republican in Democratic led CD, Republican in Republican led CD]"),
+  title = "Partisan Differences in Mask Usage Across Opposing \nParty Districts",
+  axis.title = c("", "Predicted Contacts"),
+  axis.labels = c("label 1","label 2","label 3","label 4")
+) +
+theme_minimal() +
+  theme(
+    legend.position = "none",
+    axis.text.y = element_text(size = 20), 
+    axis.title.y = element_text(size = 20), 
+    axis.text.x = element_text(size = 14), 
+    axis.title.x = element_text(size = 14),  
+    plot.title = element_text(size = 28, face = "bold"), 
+    plot.subtitle = element_text(size = 15)
+  ) +
+  geom_point(size = 5) 
+
+ggsave("dvr_masks.png", plot = mask_pred_plot, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Masks", width = 12, height = 8, units = "in")
+
+dvr_pred_plot
+```
+
