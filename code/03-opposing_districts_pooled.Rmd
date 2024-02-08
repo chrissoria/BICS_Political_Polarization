@@ -4,6 +4,14 @@ author: "Christopher Soria"
 date: "2024-01-31"
 output: html_document
 ---
+```{r}
+library(sjPlot)
+library(MASS)
+library(tidyverse)
+library(cowplot)
+```
+
+
 How do partisans change their perceptions on the severity of the pandemic depending on congressional district context?
 ```{r}
 cd_contact_reduction_model <- glm(contact_reduction ~  `rate_prev_6/14/20` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party_to_CD, 
@@ -80,12 +88,12 @@ rm(cd_concern_model, cd_concern_plot)
 How do partisans change their behavior depending on congressional district context?
 This difference becomes a little 
 ```{r}
-cd_contact_model <- glm.nb(num_cc_nonhh ~  `rate_prev_11/20/20` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party_to_CD+ cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta, 
+cd_masked_model <- lm(Norm_Masks_Used ~  `rate_prev_11/20/20` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party_to_CD+ cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta, 
                            data = bics_zip_features,
                            weights = weight_pooled)
 
 cd_contact_plot <- plot_model(
-  cd_contact_model,
+  cd_masked_model,
   colors = "black",
   type = "pred",
   auto.label = FALSE,
@@ -114,18 +122,17 @@ rm(cd_contact_model, cd_contact_plot)
 What about mask usage?
 ```{r}
 cd_masked_contact_model <- lm(Norm_Masks_Used ~  `rate_prev_11/20/20` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party_to_CD, 
-                              data = df,
+                              data = bics_zip_features,
                               weights = weight_pooled)
 
 mask_pred_plot <- plot_model(
-  dvr_masked_contact_model,
+  cd_masked_contact_model,
   colors = "black",
   type = "pred",
   auto.label = FALSE,
   terms = c("political_party_to_CD[Democrat in Democratic led CD, Democrat in Republican led CD, Republican in Democratic led CD, Republican in Republican led CD]"),
   title = "Partisan Differences in Mask Usage Across Opposing \nParty Districts",
-  axis.title = c("", "Predicted Contacts"),
-  axis.labels = c("label 1","label 2","label 3","label 4")
+  axis.title = c("", "Predicted Ratio of Mask Usage During Reported Contacts")
 ) +
 theme_minimal() +
   theme(
@@ -139,8 +146,10 @@ theme_minimal() +
   ) +
   geom_point(size = 5) 
 
-ggsave("dvr_masks.png", plot = mask_pred_plot, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Masks", width = 12, height = 8, units = "in")
+ggsave("cd_masks_pooled.png", plot = mask_pred_plot, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Masks", width = 12, height = 8, units = "in")
 
-dvr_pred_plot
+mask_pred_plot
+
+rm(mask_pred_plot, cd_masked_contact_model)
 ```
 
