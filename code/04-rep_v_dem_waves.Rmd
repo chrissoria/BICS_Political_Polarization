@@ -1,0 +1,74 @@
+---
+title: "04-rep_v_dem_waves"
+author: "Christopher Soria"
+date: "2024-02-08"
+output: html_document
+---
+```{r}
+library(emmeans)
+library(tidyverse)
+```
+
+contacts
+```{r}
+# Model for Wave 2 (June 18-24, '20)
+contacts_R_v_D_w2 <- glm.nb(num_cc_nonhh ~  `rate_prev_6/14/20` + State_Government_Response_Index_11192020 + COUNT_RUCC_CAT + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party, data = subset(bics_zip_features, wave == 2))
+
+#model for Wave 3 (September 12-20, '20)
+contacts_R_v_D_w3 <- glm.nb(num_cc_nonhh ~ `rate_prev_9/9/20` + State_Government_Response_Index_11192020 + COUNT_RUCC_CAT + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party, data = subset(bics_zip_features, wave == 3))
+
+# Model for Wave 4 (December 1-7, '20')
+contacts_R_v_D_w4 <- glm.nb(num_cc_nonhh ~  `rate_prev_12/1/20` + State_Government_Response_Index_11192020 + COUNT_RUCC_CAT + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party, data = subset(bics_zip_features, wave == 4))
+
+#model for Wave 5 (February 9-14, '21')
+contacts_R_v_D_w5 <- glm.nb(num_cc_nonhh ~ `rate_prev_2/4/21` + State_Government_Response_Index_11192020 + COUNT_RUCC_CAT + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party, data = subset(bics_zip_features, wave == 5))
+
+# Model for Wave 6 (May 14-25, '21')
+contacts_R_v_D_w6 <- glm.nb(num_cc_nonhh ~  `rate_prev_5/12/21` + State_Government_Response_Index_11192020 + COUNT_RUCC_CAT + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party, data = subset(bics_zip_features, wave == 6))
+
+emm_w2 <- emmeans(contacts_R_v_D_w2, specs = "political_party")
+emm_w3 <- emmeans(contacts_R_v_D_w3, specs = "political_party")
+emm_w4 <- emmeans(contacts_R_v_D_w4, specs = "political_party")
+emm_w5 <- emmeans(contacts_R_v_D_w5, specs = "political_party")
+emm_w6 <- emmeans(contacts_R_v_D_w6, specs = "political_party")
+
+# Combine EMMs from all models and label wave collection dates
+all_emms <- rbind(
+  transform(summary(emm_w2), wave = "June 18-24, '20"),
+  transform(summary(emm_w3), wave = "September 12-20, '20"),
+  transform(summary(emm_w4), wave = "December 1-7, '20'"),
+  transform(summary(emm_w5), wave = "February 9-14, '21"),
+  transform(summary(emm_w6), wave = "May 14-25, '21")
+)
+
+all_emms <- all_emms %>% 
+  filter(political_party != "Prefer not to answer")
+
+rm(emm_w2, emm_w3, emm_w4, emm_w5, emm_w6)
+rm(contacts_R_v_D_w2, contacts_R_v_D_w3, contacts_R_v_D_w4, contacts_R_v_D_w5, contacts_R_v_D_w6)
+
+ggplot(all_emms, aes(x = wave, y = emmean, color = political_party, shape = political_party)) +
+  geom_point(position = position_dodge(width = 0.35), size = 3) +
+  labs(y = "Predicted Reported Contacts", x = "", color = "Political Party") +
+  geom_errorbar(aes(ymin = emmean - SE, ymax = emmean + SE), width = 0.2,position = position_dodge(width = 0.35)) +
+  scale_color_manual(name = "emmean", 
+                     values = c("blue", "red", "darkgreen")) +
+  theme_minimal()
+```
+```{r}
+ggplot(all_emms, aes(x = wave, y = emmean, color = political_party, shape = political_party)) +
+  geom_point(size = 3) +
+  labs(y = "Predicted Reported Contacts", x = "", color = "Political Party") +
+  geom_line(aes(group = political_party)) +
+  scale_color_manual(name = "emmean", 
+                     values = c("blue", "red", "darkgreen")) +
+  theme_minimal()
+```
+```{r}
+ggplot(all_emms, aes(x = wave, y = emmean, color = political_party, shape = political_party)) +
+  labs(y = "Predicted Reported Contacts", x = "", color = "Political Party") +
+  geom_smooth(aes(group = political_party), method = "loess", se = FALSE) +
+  scale_color_manual(name = "emmean", values = c("blue", "red", "darkgreen")) +
+  theme_minimal()
+```
+
