@@ -125,6 +125,8 @@ df <- df %>%
     TRUE ~ "Unknown"
   ))
 
+df$educ_group <- as.factor(df$educ_group)
+
 # Print the counts of unique values in educ_group
 print(table(df$educ_group, useNA = "ifany"))
 
@@ -477,7 +479,34 @@ bics_zip_features$city <- as.factor(bics_zip_features$city) # Ensure 'city' is a
 dummy_city <- model.matrix(~ city - 1, data = bics_zip_features) # Create dummy variables
 bics_zip_features <- cbind(bics_zip_features, dummy_city)
 ```
-Pulling out party-specific datasets 
+The income variable is a bit too high-resolution to use in a model as a categorical variable
+Pulling out party-specific data sets 
+```{r}
+bics_zip_features <- bics_zip_features %>%
+  mutate(Income_Category = case_when(
+    hhi %in% c("Less than $5,000", "$5,000 to $9,999", "$10,000 to $14,999", "$15,000 to $19,999", "$20,000 to $24,999", "$25,000 to $29,999") ~ "Less than $30,000",
+    hhi %in% c("$30,000 to $34,999", "$35,000 to $39,999", "$40,000 to $44,999", "$45,000 to $49,999", "$50,000 to $54,999", "$55,000 to $59,999") ~ "$30,000 to $59,999",
+    hhi %in% c("$60,000 to $64,999", "$65,000 to $69,999", "$70,000 to $74,999", "$75,000 to $79,999", "$80,000 to $84,999", "$85,000 to $89,999") ~ "$60,000 to $89,999",
+    hhi %in% c("$90,000 to $94,999", "$95,000 to $99,999", "$100,000 to $124,999", "$125,000 to $149,999", "$150,000 to $174,999", "$175,000 to $199,999") ~ "$90,000 to $199,999",
+    hhi %in% c("$200,000 to $249,999", "$250,000 and above") ~ "$200,000 and above",
+    TRUE ~ "Prefer not to answer"
+  ))
+
+bics_zip_features$Income_Category <- as.factor(bics_zip_features$Income_Category)
+bics_zip_features$Income_Category <- factor(bics_zip_features$Income_Category, levels = c("Less than $30,000", "$30,000 to $59,999", "$60,000 to $89,999","$90,000 to $199,999","200,000 to $249,999", "Prefer not to answer"))
+```
+setting sex to factor
+```{r}
+bics_zip_features$resp_sex <- as.factor(bics_zip_features$resp_sex)
+bics_zip_features$resp_sex <- factor(bics_zip_features$resp_sex, levels = c("Male","Female","Other"))
+
+bics_zip_features <- bics_zip_features %>% 
+  mutate(male = case_when(
+    resp_sex == "Male" ~ 1,
+    TRUE ~ 0
+  ))
+```
+
 ```{r}
 RD_df <- bics_zip_features[bics_zip_features$political_party %in% c("Republican", "Democrat"), ]
 D_df <- subset(bics_zip_features, political_party == "Democrat")
@@ -486,7 +515,6 @@ R_df <- subset(bics_zip_features, political_party == "Republican")
 D_df <- subset(D_df, !is.na(D_df$Categorical_Repub_CD_County_Share))
 R_df <- subset(R_df, !is.na(R_df$Categorical_Dem_CD_County_Share))
 ```
-
 ```{r}
 write_csv(bics_zip_features, "../data/BICS_ZIP_Features.csv")
 write_csv(RD_df, "../data/RD_BICS_ZIP_Features.csv")

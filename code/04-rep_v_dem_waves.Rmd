@@ -12,10 +12,10 @@ library(tidyverse)
 contacts
 ```{r}
 # Model for Wave 2 (June 18-24, '20)
-contacts_R_v_D_w2 <- glm.nb(num_cc_nonhh ~  `rate_prev_6/14/20` + State_Government_Response_Index_11192020 + COUNT_RUCC_CAT + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party, data = subset(bics_zip_features, wave == 2))
+contacts_R_v_D_w2 <- glm.nb(num_cc_nonhh ~  `rate_prev_6/14/20` + State_Government_Response_Index_06172020 + COUNT_RUCC_CAT + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party, data = subset(bics_zip_features, wave == 2, weights = weight_pooled))
 
 #model for Wave 3 (September 12-20, '20)
-contacts_R_v_D_w3 <- glm.nb(num_cc_nonhh ~ `rate_prev_9/9/20` + State_Government_Response_Index_11192020 + COUNT_RUCC_CAT + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party, data = subset(bics_zip_features, wave == 3))
+contacts_R_v_D_w3 <- glm.nb(num_cc_nonhh ~ `rate_prev_9/9/20` + State_Government_Response_Index_0617202 + COUNT_RUCC_CAT + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party, data = subset(bics_zip_features, wave == 3))
 
 # Model for Wave 4 (December 1-7, '20')
 contacts_R_v_D_w4 <- glm.nb(num_cc_nonhh ~  `rate_prev_12/1/20` + State_Government_Response_Index_11192020 + COUNT_RUCC_CAT + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party, data = subset(bics_zip_features, wave == 4))
@@ -54,21 +54,8 @@ ggplot(all_emms, aes(x = wave, y = emmean, color = political_party, shape = poli
   scale_color_manual(name = "emmean", 
                      values = c("blue", "red", "darkgreen")) +
   theme_minimal()
+
+rm(all_emms)
 ```
-```{r}
-ggplot(all_emms, aes(x = wave, y = emmean, color = political_party, shape = political_party)) +
-  geom_point(size = 3) +
-  labs(y = "Predicted Reported Contacts", x = "", color = "Political Party") +
-  geom_line(aes(group = political_party)) +
-  scale_color_manual(name = "emmean", 
-                     values = c("blue", "red", "darkgreen")) +
-  theme_minimal()
-```
-```{r}
-ggplot(all_emms, aes(x = wave, y = emmean, color = political_party, shape = political_party)) +
-  labs(y = "Predicted Reported Contacts", x = "", color = "Political Party") +
-  geom_smooth(aes(group = political_party), method = "loess", se = FALSE) +
-  scale_color_manual(name = "emmean", values = c("blue", "red", "darkgreen")) +
-  theme_minimal()
-```
+
 

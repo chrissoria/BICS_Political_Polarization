@@ -11,12 +11,15 @@ library(MASS)
 
 
 First, I want to find out who was more likely to say that they reduced contact throughout the pandemic
+clustering of errors?
+controlling for state?
+controlling for binary state variables?
+Cluster errors by wave?
 ```{r}
-rvd_contact_reduction_model <- glm(contact_reduction ~  `rate_prev_6/14/20` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta, 
-                                   data = bics_zip_features, 
-                                   family = binomial,
+options(contrasts = c("contr.treatment", "contr.poly"))
+rvd_contact_reduction_model <- lm(contact_reduction ~  `rate_prev_12/1/20` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + political_party + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta, 
+                                   data = bics_zip_features,
                                    weights = weight_pooled)
-
 
 rvd_contact_reduction_plot <- plot_model(
   rvd_contact_reduction_model,
@@ -41,16 +44,15 @@ theme_minimal() +
 
 ggsave("rvd_contact_reduction_pooled.png", plot = rvd_contact_reduction_plot, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Contact_Reduction", width = 12, height = 8, units = "in")
 
-print(summary(rvd_contact_reduction_model))
-rvd_contact_reduction_plot
+summary(rvd_contact_reduction_model)
+print(rvd_contact_reduction_plot)
 
 rm(rvd_contact_reduction_model,rvd_contact_reduction_plot)
 ```
 Next, I want to find out who was more concerned about the spread of the virus throughout the pandemic
 ```{r}
-rvd_concern_model <- glm(binary_concern_strong ~  `rate_prev_6/14/20` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta, 
+rvd_concern_model <- lm(binary_concern_strong ~  `rate_prev_12/1/20` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + political_party + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta, 
                                    data = bics_zip_features, 
-                                   family = binomial,
                                    weights = weight_pooled)
 
 
@@ -84,7 +86,7 @@ rm(rvd_concern_model,rvd_concern_plot)
 ```
 Now, let's take a look at number of non-household contacts glm.nb
 ```{r}
-rvd_contacts_model <- glm.nb(num_cc_nonhh  ~  `rate_prev_6/14/20` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta, 
+rvd_contacts_model <- glm.nb(num_cc_nonhh  ~  `rate_prev_12/1/20` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + political_party + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta, 
                                    data = bics_zip_features, 
                                    weights = weight_pooled)
 
@@ -120,7 +122,7 @@ rm(rvd_contacts_model,rvd_contacts_plot)
 And lastly, let's see how republicans and democrats differed on mask usage
 For now, I'm using a linear model for the sake of making it easy to interpret 
 ```{r}
-rvd_masks_model <- lm(Norm_Masks_Used  ~  `rate_prev_6/14/20` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta, 
+rvd_masks_model <- lm(Norm_Masks_Used  ~  `rate_prev_12/1/20` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + political_party + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta, 
                                    data = bics_zip_features,
                                    weights = weight_pooled)
 
