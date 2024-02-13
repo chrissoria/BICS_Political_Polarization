@@ -14,7 +14,7 @@ library(cowplot)
 
 How do partisans change their perceptions on the severity of the pandemic depending on congressional district context?
 ```{r}
-cd_contact_reduction_model <- lm(contact_reduction ~  `rate_prev_12/1/20` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + political_party_to_CD + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta, 
+cd_contact_reduction_model <- lm(contact_reduction ~  `rate_prev_12/1/20` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + political_party_to_CD + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave, 
                                    data = bics_zip_features, 
                                    weights = weight_pooled)
 
@@ -49,7 +49,7 @@ rm(cd_contact_reduction_model, cd_contact_reduction_plot)
 ```
 How does their concern about the spread of the virus 
 ```{r}
-cd_concern_model <- lm(contact_reduction ~  `rate_prev_12/1/20` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + political_party_to_CD + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta, 
+cd_concern_model <- lm(contact_reduction ~  `rate_prev_12/1/20` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + political_party_to_CD + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave, 
                                    data = bics_zip_features, 
                                    weights = weight_pooled)
 
@@ -86,7 +86,7 @@ rm(cd_concern_model, cd_concern_plot)
 How do partisans change their behavior depending on congressional district context?
 This difference becomes a little 
 ```{r}
-cd_masked_model <- glm.nb(num_cc_nonhh ~  `rate_prev_12/1/20` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + political_party_to_CD + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta, 
+cd_masked_model <- glm.nb(num_cc_nonhh ~  `rate_prev_12/1/20` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + political_party_to_CD + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave, 
                            data = bics_zip_features,
                            weights = weight_pooled)
 
@@ -119,7 +119,7 @@ rm(cd_contact_model, cd_contact_plot)
 ```
 What about mask usage?
 ```{r}
-cd_masked_contact_model <- lm(Norm_Masks_Used ~  `rate_prev_12/1/20` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + political_party_to_CD + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta, 
+cd_masked_contact_model <- lm(Norm_Masks_Used ~  `rate_prev_12/1/20` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + political_party_to_CD + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave, 
                               data = bics_zip_features,
                               weights = weight_pooled)
 
