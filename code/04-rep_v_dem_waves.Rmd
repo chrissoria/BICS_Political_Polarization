@@ -12,19 +12,19 @@ library(tidyverse)
 contacts
 ```{r}
 # Model for Wave 2 (June 18-24, '20)
-contacts_R_v_D_w2 <- glm.nb(num_cc_nonhh ~  `rate_prev_6/14/20` + State_Government_Response_Index_06172020 + COUNT_RUCC_CAT + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party, data = subset(bics_zip_features, wave == 2, weights = weight_pooled))
+contacts_R_v_D_w2 <- glm.nb(num_cc_nonhh ~  `rate_prev_6/14/20` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + political_party, data = subset(bics_zip_features, wave == 2, weights = weight_pooled))
 
 #model for Wave 3 (September 12-20, '20)
-contacts_R_v_D_w3 <- glm.nb(num_cc_nonhh ~ `rate_prev_9/9/20` + State_Government_Response_Index_0617202 + COUNT_RUCC_CAT + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party, data = subset(bics_zip_features, wave == 3))
+contacts_R_v_D_w3 <- glm.nb(num_cc_nonhh ~ `rate_prev_9/9/20` +State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + political_party, data = subset(bics_zip_features, wave == 3))
 
 # Model for Wave 4 (December 1-7, '20')
-contacts_R_v_D_w4 <- glm.nb(num_cc_nonhh ~  `rate_prev_12/1/20` + State_Government_Response_Index_11192020 + COUNT_RUCC_CAT + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party, data = subset(bics_zip_features, wave == 4))
+contacts_R_v_D_w4 <- glm.nb(num_cc_nonhh ~  `rate_prev_12/1/20` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + political_party, data = subset(bics_zip_features, wave == 4))
 
 #model for Wave 5 (February 9-14, '21')
-contacts_R_v_D_w5 <- glm.nb(num_cc_nonhh ~ `rate_prev_2/4/21` + State_Government_Response_Index_11192020 + COUNT_RUCC_CAT + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party, data = subset(bics_zip_features, wave == 5))
+contacts_R_v_D_w5 <- glm.nb(num_cc_nonhh ~ `rate_prev_2/4/21` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + political_party, data = subset(bics_zip_features, wave == 5))
 
 # Model for Wave 6 (May 14-25, '21')
-contacts_R_v_D_w6 <- glm.nb(num_cc_nonhh ~  `rate_prev_5/12/21` + State_Government_Response_Index_11192020 + COUNT_RUCC_CAT + resp_sex + resp_educ + resp_yob + r_working + r_race + political_party, data = subset(bics_zip_features, wave == 6))
+contacts_R_v_D_w6 <- glm.nb(num_cc_nonhh ~  `rate_prev_5/12/21` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + political_party, data = subset(bics_zip_features, wave == 6))
 
 emm_w2 <- emmeans(contacts_R_v_D_w2, specs = "political_party")
 emm_w3 <- emmeans(contacts_R_v_D_w3, specs = "political_party")
