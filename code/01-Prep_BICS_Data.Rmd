@@ -506,6 +506,45 @@ bics_zip_features <- bics_zip_features %>%
     TRUE ~ 0
   ))
 ```
+Now, it might be the case that political orientation is more important that political party. For example, Republicans in certain regions might actually just be less conservative, and therefore it might not be the party affiliation that matters but political orientation
+```{r}
+bics_zip_features <- bics_zip_features %>% 
+  mutate(
+    extreme_liberal = case_when(
+      political_view == "Extremely liberal" ~ 1,
+      is.na(political_view) ~ NA_real_,
+      TRUE ~ 0
+    ),
+    extreme_conservative = case_when(
+      political_view == "Extremely conservative" ~ 1,
+      is.na(political_view) ~ NA_real_,
+      TRUE ~ 0
+    )
+  )
+
+bics_zip_features <- bics_zip_features %>% 
+  mutate(
+    liberal = case_when(
+      political_view %in% c("Extremely liberal","Liberal","Slightly Liberal") ~ 1,
+      is.na(political_view) ~ NA_real_,
+      TRUE ~ 0
+    ),
+    conservative = case_when(
+      political_view %in% c("Extremely conservative","Middle of the road", "Slightly conservative") ~ 1,
+      is.na(political_view) ~ NA_real_,
+      TRUE ~ 0
+    )
+  )
+
+bics_zip_features$political_view <- as.factor(bics_zip_features$political_view)
+```
+These variables 
+```{r}
+
+bics_zip_features <- bics_zip_features %>% 
+  mutate(log_rate_prev_12_01_20 = log(`rate_prev_12/1/20`+ 1))  # using log1p approach for handling zeros
+
+```
 
 ```{r}
 RD_df <- bics_zip_features[bics_zip_features$political_party %in% c("Republican", "Democrat"), ]

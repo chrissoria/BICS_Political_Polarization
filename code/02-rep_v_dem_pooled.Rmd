@@ -16,8 +16,7 @@ controlling for state?
 controlling for binary state variables?
 Cluster errors by wave?
 ```{r}
-options(contrasts = c("contr.treatment", "contr.poly"))
-rvd_contact_reduction_model <- lm(contact_reduction ~  `rate_prev_12/1/20` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + political_party + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave, 
+rvd_contact_reduction_model <- lm(contact_reduction ~  `rate_prev_12/1/20` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + political_party + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + extreme_liberal + extreme_conservative, 
                                    data = bics_zip_features,
                                    weights = weight_pooled)
 
@@ -51,7 +50,7 @@ rm(rvd_contact_reduction_model,rvd_contact_reduction_plot)
 ```
 Next, I want to find out who was more concerned about the spread of the virus throughout the pandemic
 ```{r}
-rvd_concern_model <- lm(binary_concern_strong ~  `rate_prev_12/1/20` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + political_party + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave, 
+rvd_concern_model <- lm(binary_concern_strong ~  `rate_prev_12/1/20` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + political_party + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave  + extreme_liberal + extreme_conservative, 
                                    data = bics_zip_features, 
                                    weights = weight_pooled)
 
@@ -86,7 +85,7 @@ rm(rvd_concern_model,rvd_concern_plot)
 ```
 Now, let's take a look at number of non-household contacts glm.nb
 ```{r}
-rvd_contacts_model <- glm.nb(num_cc_nonhh  ~  `rate_prev_12/1/20` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + political_party + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave, 
+rvd_contacts_model <- glm.nb(num_cc_nonhh  ~  `rate_prev_12/1/20` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + political_party + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + extreme_liberal + extreme_conservative, 
                                    data = bics_zip_features, 
                                    weights = weight_pooled)
 
@@ -122,10 +121,12 @@ rm(rvd_contacts_model,rvd_contacts_plot)
 And lastly, let's see how republicans and democrats differed on mask usage
 For now, I'm using a linear model for the sake of making it easy to interpret 
 ```{r}
-rvd_masks_model <- lm(Norm_Masks_Used  ~  `rate_prev_12/1/20` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + political_party + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave, 
-                                   data = bics_zip_features,
-                                   weights = weight_pooled)
+rvd_masks_model <- lm(Norm_Masks_Used  ~  log_rate_prev_12_01_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + political_party + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + political_view, 
+                                   data = bics_zip_features)
 
+print(plot(rvd_masks_model))
+print(car::vif(rvd_masks_model))
+print(lmtest::dwtest(rvd_masks_model))
 print(summary(rvd_masks_model))
 
 rvd_masks_plot <- plot_model(
