@@ -289,7 +289,6 @@ bics_zip_features <- bics_zip_features %>%
   distinct(ResponseId, .keep_all = TRUE)
 ```
 How many matches do we get?
-Why is this slightly different than the python script?
 ```{r}
 bics_zip_features %>%
   summarise(
@@ -317,6 +316,41 @@ bics_zip_features %>%
   ) %>%
   print()
 ```
+And county-level mask mandates? Only .5% of people are missing this information.
+```{r}
+bics_zip_features %>%
+  summarise(
+    Num_Missing_maskmandates = sum(is.na(county_conditions)),
+    Pct_Missing_maskmandates = mean(is.na(county_conditions)) * 100
+  ) %>%
+  print()
+```
+Let's clean up the mask mandates variable
+```{r}
+strict_mandates <- c("all public places","Face coverings are required to be worn over the mouth and nose of all county residents while inside or on grounds of all government buildings, private businesses, organizations or venues open to the public.","in public places","indoor and outdoor places","Indoor, outdoor, public places and public transportations","most public places", "public places where 6 feet of social distance cannot be maintained","All employees and members of the general public","Face masks are now required when exercising, even outdoors.","Require every person in the city to wear a face covering when inside a commercial business or other structure, building or space open to the public. Masks also will be required in an outdoor space when staying 6 feet apart for social distancing from someone not of the same household is difficult.  (passed by Tulsa City Council)","State leaders targeted Butler County as a red-alert area Tuesday, requiring all residents to wear protective masks in public to slow the recent local spike in coronavirus cases.","All employees and members of the general public all public places","public places where 6 feet of social distance cannot be maintained","public places and where social distancing impossible")
+
+less_strict_mandates <- c("Require masks in indoor public places throughout Oklahoma City. (a mask mandate passed by Oklahoma City Coucil; however, a similar mandate denied by the county commissioners)","All customers in retail facilities, most forward facing facilities and if you are indoors or outdoors and cannot be 6ft away from another person, you must wear a mask.","And in 7/15 people were asked to wear masks when entering the government buildings.","Anderson City Council approves mask ordinance in 7/23","Anyone over age 2 who can medically tolerate a face covering when in a public place and unable to maintain social distancing.","counties with more than 20 coronavirus cases to wear a face covering over the nose and mouth while in a business or other building open to the public, as well as outdoor public spaces, whenever social distancing is not possible.","Employees working with the public","following the state order","in all types of businesses","indoor commercial businesses and town offices in the town of Boone","indoor places and indoor businesses, workers need to wear one if outdoor not social distancing impossible","Indoor public spaces and at any organized outdoor activity where social distancing cannot be maintained, including markets, weddings and parties","inside public spaces except when eating or drinking","retail only","The Clinton County Board of Supervisors voted in favor of requiring face masks or face shields to be worn in all Clinton County buildings starting Tuesday, July 27.","applies to any indoor or confined public setting where a person will be within six feet of another individual, who does not share the same household(5/27). Follow the state order(7/10).","Indoor public spaces and at any organized outdoor activity where social distancing cannot be maintained, including markets, weddings and parties","The directive applies to any indoor or confined public setting where a person will be within six feet of another individual, who does not share the same household(5/27). Follow the state order(7/10).","Face masks no longer mandatory for Bell County businesses started from 6_29, but Kentucky ordered to wear masks started from 7_10_2020")
+
+unclear_or_unspecified_mandates <- c("unspecified", "unclear","other")
+
+no_mandates <- c("Local officials generally agreed with the idea behind the mandate, but reactions differed on the execution of the order as well as if it was necessary at all. The public reaction locally also varied wildly, ranging from angered to very pleased based on social media input.","no mandate","opt out","opts out of the provisions of Executive Order No. 20-52 requiring masks or other face coverings in public but recommend the use of face coverings","Despite not passing a city-wide masking requirement, Nixa city leaders have recommended that people follow the Centers for Disease Control and Prevention guidelines about wearing face coverings in public.")
+
+bics_zip_features <- bics_zip_features %>% 
+  mutate(county_conditions = trimws(county_conditions)) %>%
+  mutate(county_mask_mandate = case_when(
+    county_conditions %in% strict_mandates ~ "Strict",
+    county_conditions %in% less_strict_mandates ~ "Less Strict",
+    county_conditions %in% unclear_or_unspecified_mandates ~ "Unspecified or Unclear Mandate",
+    county_conditions %in% no_mandates ~ "No Mandate",
+    TRUE ~ NA_character_
+  )) %>%
+  mutate(county_mask_mandate = factor(county_mask_mandate, levels = c("Strict", "Less Strict", "Unspecified or Unclear Mandate", "No Mandate")))
+
+
+print(table(bics_zip_features$county_conditions, useNA = "always"))
+print(table(bics_zip_features$county_mask_mandate, useNA = "always"))
+```
+
 ```{r}
 bics_zip_features <- bics_zip_features %>%
   mutate(CONGRESSPERSON_PARTY = ifelse(CONGRESSPERSON_PARTY == "", NA_character_,
@@ -478,6 +512,7 @@ We might want to control for city samples, so let's pull out some dummies
 bics_zip_features$city <- as.factor(bics_zip_features$city) # Ensure 'city' is a factor
 dummy_city <- model.matrix(~ city - 1, data = bics_zip_features) # Create dummy variables
 bics_zip_features <- cbind(bics_zip_features, dummy_city)
+rm(dummy_city)
 ```
 The income variable is a bit too high-resolution to use in a model as a categorical variable
 Pulling out party-specific data sets 
@@ -538,11 +573,16 @@ bics_zip_features <- bics_zip_features %>%
 
 bics_zip_features$political_view <- as.factor(bics_zip_features$political_view)
 ```
-These variables 
+These variables should be logged so that they fit better with a linear model
+using log1p for handling zeros
 ```{r}
 
 bics_zip_features <- bics_zip_features %>% 
-  mutate(log_rate_prev_12_01_20 = log(`rate_prev_12/1/20`+ 1))  # using log1p approach for handling zeros
+  mutate(log_rate_prev_12_01_20 = log(`rate_prev_12/1/20`+ 1),
+         log_rate_prev_6_14_20 = log(`rate_prev_6/14/20`+1),
+         log_rate_prev_9_9_20 = log(`rate_prev_9/9/20`+1),
+         log_rate_prev_2_4_21 = log(`rate_prev_2/4/21`+1),
+         log_rate_prev_5_12_21 = log(`rate_prev_5/12/21`+1))  #
 
 ```
 

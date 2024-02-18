@@ -16,7 +16,7 @@ controlling for state?
 controlling for binary state variables?
 Cluster errors by wave?
 ```{r}
-rvd_contact_reduction_model <- lm(contact_reduction ~  `rate_prev_12/1/20` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + political_party + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + extreme_liberal + extreme_conservative, 
+rvd_contact_reduction_model <- lm(contact_reduction ~  `rate_prev_12/1/20` + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + political_party + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + extreme_liberal + extreme_conservative, 
                                    data = bics_zip_features,
                                    weights = weight_pooled)
 
@@ -50,7 +50,7 @@ rm(rvd_contact_reduction_model,rvd_contact_reduction_plot)
 ```
 Next, I want to find out who was more concerned about the spread of the virus throughout the pandemic
 ```{r}
-rvd_concern_model <- lm(binary_concern_strong ~  `rate_prev_12/1/20` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + political_party + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave  + extreme_liberal + extreme_conservative, 
+rvd_concern_model <- lm(binary_concern_strong ~  `rate_prev_12/1/20` + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + political_party + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave  + extreme_liberal + extreme_conservative, 
                                    data = bics_zip_features, 
                                    weights = weight_pooled)
 
@@ -85,7 +85,7 @@ rm(rvd_concern_model,rvd_concern_plot)
 ```
 Now, let's take a look at number of non-household contacts glm.nb
 ```{r}
-rvd_contacts_model <- glm.nb(num_cc_nonhh  ~  `rate_prev_12/1/20` + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + political_party + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + extreme_liberal + extreme_conservative, 
+rvd_contacts_model <- glm.nb(num_cc_nonhh  ~  `rate_prev_12/1/20` + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + political_party + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + extreme_liberal + extreme_conservative, 
                                    data = bics_zip_features, 
                                    weights = weight_pooled)
 
