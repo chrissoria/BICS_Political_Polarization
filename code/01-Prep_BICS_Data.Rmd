@@ -590,6 +590,7 @@ bics_zip_features <- bics_zip_features %>%
 RD_df <- bics_zip_features[bics_zip_features$political_party %in% c("Republican", "Democrat"), ]
 D_df <- subset(bics_zip_features, political_party == "Democrat")
 R_df <- subset(bics_zip_features, political_party == "Republican")
+I_df <- subset(bics_zip_features, political_party == "Independent")
 
 D_df <- subset(D_df, !is.na(D_df$Categorical_Repub_CD_County_Share))
 R_df <- subset(R_df, !is.na(R_df$Categorical_Dem_CD_County_Share))

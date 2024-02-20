@@ -16,7 +16,7 @@ controlling for state?
 controlling for binary state variables?
 Cluster errors by wave?
 ```{r}
-rvd_contact_reduction_model <- lm(contact_reduction ~  `rate_prev_12/1/20` + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + political_party + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + extreme_liberal + extreme_conservative, 
+rvd_contact_reduction_model <- lm(contact_reduction ~  log_rate_prev_12_01_20 + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + political_party + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + extreme_liberal + extreme_conservative, 
                                    data = bics_zip_features,
                                    weights = weight_pooled)
 
