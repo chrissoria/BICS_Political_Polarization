@@ -17,20 +17,24 @@ rep_in_rep_concern_model <- lm(binary_concern_strong ~  log_rate_prev_12_01_20 +
 ind_in_rep_concern_model <- lm(binary_concern_strong ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_DEMOCRAT, 
                                    data = I_df)
 
+print(summary(dem_in_rep_concern_model))
+print(summary(rep_in_rep_concern_model))
+print(summary(ind_in_rep_concern_model))
+
 CD_PERCENT_DEMOCRAT_range <- seq(min(D_df$CD_PERCENT_DEMOCRAT), max(D_df$CD_PERCENT_DEMOCRAT), length.out = 100)
 
 concern_dem_in_rep_values <- .7 + (dem_in_rep_concern_model$coefficients["CD_PERCENT_DEMOCRAT"]) * CD_PERCENT_DEMOCRAT_range
 rep_concern_in_rep_values <- .7 + (rep_in_rep_concern_model$coefficients["CD_PERCENT_DEMOCRAT"]) * CD_PERCENT_DEMOCRAT_range
 ind_concern_in_rep_values <- .7 + (ind_in_rep_concern_model$coefficients["CD_PERCENT_DEMOCRAT"]) * CD_PERCENT_DEMOCRAT_range
 
+# Your plotting code
 plot(CD_PERCENT_DEMOCRAT_range, concern_dem_in_rep_values, type = "l", col = "blue",
      main = "Estimated Relationship between CD Percent Republican and Concern",
      xlab = "CD Percent Republican", ylab = "Estimated Concern", ylim = c(0.6, 1), lwd = 2)
 
-# Add the second line using lines()
+# Add the second and third lines using lines()
 lines(CD_PERCENT_DEMOCRAT_range, rep_concern_in_rep_values, type = "l", col = "red", lwd = 2)
 lines(CD_PERCENT_DEMOCRAT_range, ind_concern_in_rep_values, type = "l", col = "gray", lwd = 2)
-
 
 # Add a grid for better readability
 grid()
@@ -38,7 +42,7 @@ grid()
 # Add a legend to distinguish the lines
 legend("topright", 
        legend = c("Democrats", "Republicans", "Independents"), 
-       col = c("blue", "red","gray"), 
+       col = c("blue", "red", "gray"), 
        lty = 1, lwd = 2)
 ```
 
@@ -79,7 +83,7 @@ legend("topright",
 ```
 
 Step 3. Control for political ideology and mask mandates
-Neither mask mandaetes nor political ideology seem to matter in terms of shifting people's stated concern about the spread of the virus
+Neither mask mandates nor political ideology seem to matter in terms of shifting people's stated concern about the spread of the virus (but does make the slopes more similar)
 ```{r}
 #concern
 dem_in_rep_concern_model <- lm(binary_concern_strong ~  log_rate_prev_12_01_20 + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + extreme_liberal + extreme_conservative + CD_PERCENT_DEMOCRAT, 
@@ -96,6 +100,7 @@ CD_PERCENT_DEMOCRAT_range <- seq(min(D_df$CD_PERCENT_DEMOCRAT), max(D_df$CD_PERC
 concern_dem_in_rep_values <- .7 + (dem_in_rep_concern_model$coefficients["CD_PERCENT_DEMOCRAT"]) * CD_PERCENT_DEMOCRAT_range
 rep_concern_in_rep_values <- .7 + (rep_in_rep_concern_model$coefficients["CD_PERCENT_DEMOCRAT"]) * CD_PERCENT_DEMOCRAT_range
 ind_concern_in_rep_values <- .7 + (ind_in_rep_concern_model$coefficients["CD_PERCENT_DEMOCRAT"]) * CD_PERCENT_DEMOCRAT_range
+
 
 plot(CD_PERCENT_DEMOCRAT_range, concern_dem_in_rep_values, type = "l", col = "blue",
      main = "Estimated Relationship between CD Percent Republican and Concern",
@@ -114,6 +119,33 @@ legend("topright",
        legend = c("Democrats", "Republicans", "Independents"), 
        col = c("blue", "red","gray"), 
        lty = 1, lwd = 2)
+```
+saving the png
+```{r}
+output_file_path <- "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Concern/d_cd_concern.png"
+
+png(filename = output_file_path, width = 800, height = 600)
+
+plot(CD_PERCENT_DEMOCRAT_range, concern_dem_in_rep_values, type = "l", col = "blue",
+     main = "Estimated Relationship between CD Percent Republican and Concern",
+     xlab = "CD Percent Republican", ylab = "Estimated Concern", ylim = c(0.6, 1), lwd = 2)
+
+# Add the second line using lines()
+lines(CD_PERCENT_DEMOCRAT_range, rep_concern_in_rep_values, type = "l", col = "red", lwd = 2)
+lines(CD_PERCENT_DEMOCRAT_range, ind_concern_in_rep_values, type = "l", col = "gray", lwd = 2)
+
+
+# Add a grid for better readability
+grid()
+
+# Add a legend to distinguish the lines
+legend("topright", 
+       legend = c("Democrats", "Republicans", "Independents"), 
+       col = c("blue", "red","gray"), 
+       lty = 1, lwd = 2)
+
+
+dev.off()
 ```
 
 stated contact reduction
@@ -219,9 +251,34 @@ legend("topright",
        col = c("blue", "red","gray"), 
        lty = 1, lwd = 2)
 ```
-
+saving to png
 ```{r}
-rm(contact_reduction_dem_in_rep_values, CD_PERCENT_DEMOCRAT_range, combined_CD_PERCENT_DEMOCRAT_range, contact_reduction_values, ind_in_rep_contact_reduction_model, contact_reduction_rep_in_rep_values)
+output_file_path <- "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Contact_Reduction/d_cd_contact_reduction.png"
+
+png(filename = output_file_path, width = 800, height = 600)
+
+CD_PERCENT_DEMOCRAT_range <- seq(min(D_df$CD_PERCENT_DEMOCRAT), max(D_df$CD_PERCENT_DEMOCRAT), length.out = 100)
+
+contact_reduction_dem_in_rep_values <- .7 + (dem_in_rep_contact_reduction_model$coefficients["CD_PERCENT_DEMOCRAT"]) * CD_PERCENT_DEMOCRAT_range
+contact_reduction_rep_in_rep_values <- .7 + (rep_in_rep_contact_reduction_model$coefficients["CD_PERCENT_DEMOCRAT"]) * CD_PERCENT_DEMOCRAT_range
+contact_reduction_ind_in_rep_values <- .7 + (ind_in_rep_contact_reduction_model$coefficients["CD_PERCENT_DEMOCRAT"]) * CD_PERCENT_DEMOCRAT_range
+
+plot(CD_PERCENT_DEMOCRAT_range, contact_reduction_dem_in_rep_values, type = "l", col = "blue",
+     main = "Estimated Relationship between CD Percent Republican and Contact Reduction",
+     xlab = "CD Percent Republican", ylab = "Estimated Contact Reduction", ylim = c(0.6, 1), lwd = 2)
+
+lines(CD_PERCENT_DEMOCRAT_range, contact_reduction_rep_in_rep_values, type = "l", col = "red", lwd = 2)
+lines(CD_PERCENT_DEMOCRAT_range, contact_reduction_ind_in_rep_values, type = "l", col = "gray", lwd = 2)
+
+
+grid()
+
+legend("topright", 
+       legend = c("Democrats", "Republicans", "Independents"), 
+       col = c("blue", "red","gray"), 
+       lty = 1, lwd = 2)
+
+dev.off()
 ```
 
 Step 1. Do not control for either political ideology not mask mandates 
@@ -330,9 +387,33 @@ legend("topright",
        legend = c("Democrats", "Republicans", "Independents"), 
        col = c("blue", "red","gray"), 
        lty = 1, lwd = 2)
-
-rm(ind_in_rep_contact_model, dem_in_rep_contact_model, rep_in_rep_contact_model, dem_in_rep_contact_values, rep_in_rep_contact_values, ind_in_rep_contact_values)
 ```
+saving to png
+```{r}
+output_file_path <- "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Contacts/d_cd_contacts.png"
+
+png(filename = output_file_path, width = 800, height = 600)
+
+dem_in_rep_contact_values <- 1 + (dem_in_rep_contact_model$coefficients["CD_PERCENT_DEMOCRAT"]) * CD_PERCENT_DEMOCRAT_range
+rep_in_rep_contact_values <- 1 + (rep_in_rep_contact_model$coefficients["CD_PERCENT_DEMOCRAT"]) * CD_PERCENT_DEMOCRAT_range
+ind_in_rep_contact_values <- 1 + (ind_in_rep_contact_model$coefficients["CD_PERCENT_DEMOCRAT"]) * CD_PERCENT_DEMOCRAT_range
+
+plot(CD_PERCENT_DEMOCRAT_range, dem_in_rep_contact_values, type = "l", col = "blue",
+     main = "Estimated Relationship between CD Percent Republican and Non-Household Contacts",
+     xlab = "CD Percent Republican", ylab = "Estimated Non-Household Contacts", ylim = c(0.0, 2), lwd = 2)
+
+lines(CD_PERCENT_DEMOCRAT_range, rep_in_rep_contact_values, type = "l", col = "red", lwd = 2)
+lines(CD_PERCENT_DEMOCRAT_range, ind_in_rep_contact_values, type = "l", col = "gray", lwd = 2)
+
+grid()
+
+legend("topright", 
+       legend = c("Democrats", "Republicans", "Independents"), 
+       col = c("blue", "red","gray"), 
+       lty = 1, lwd = 2)
+dev.off()
+```
+
 Mask usage
 Step 1.
 ```{r}
@@ -430,6 +511,32 @@ legend("topright",
        col = c("blue", "red","gray"), 
        lty = 1, lwd = 2)
 ```
+saving to png
+```{r}
+output_file_path <- "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Masks/d_cd_masks.png"
+
+png(filename = output_file_path, width = 800, height = 600)
+
+dem_in_rep_mask_values <- .5 + (dem_in_rep_mask_model$coefficients["CD_PERCENT_DEMOCRAT"]) * CD_PERCENT_DEMOCRAT_range
+rep_in_rep_mask_values <- .5 + (rep_in_rep_mask_model$coefficients["CD_PERCENT_DEMOCRAT"]) * CD_PERCENT_DEMOCRAT_range
+ind_in_rep_mask_values <- .5 + (ind_in_rep_mask_model$coefficients["CD_PERCENT_DEMOCRAT"]) * CD_PERCENT_DEMOCRAT_range
+
+plot(CD_PERCENT_DEMOCRAT_range, dem_in_rep_mask_values, type = "l", col = "blue",
+     main = "Estimated Relationship between CD Percent Republican and Masked Contacts",
+     xlab = "CD Percent Republican", ylab = "Estimated Proportion Masked Contacts", ylim = c(0.4, 1), lwd = 2)
+
+lines(CD_PERCENT_DEMOCRAT_range, rep_in_rep_mask_values, type = "l", col = "red", lwd = 2)
+lines(CD_PERCENT_DEMOCRAT_range, ind_in_rep_mask_values, type = "l", col = "gray", lwd = 2)
+
+grid()
+
+legend("topright", 
+       legend = c("Democrats", "Republicans", "Independents"), 
+       col = c("blue", "red","gray"), 
+       lty = 1, lwd = 2)
+
+dev.off()
+```
 
 Vaccination
 Step 1. no controls
@@ -489,7 +596,7 @@ ind_in_rep_vax_values <- .5 + (rep_in_vax_model$coefficients["CD_PERCENT_DEMOCRA
 
 plot(CD_PERCENT_DEMOCRAT_range, dem_in_rep_mask_values, type = "l", col = "blue",
      main = "Estimated Relationship between CD Percent Republican and Vaccination",
-     xlab = "CD Percent Republican", ylab = "Estimated Probability of Vaccination", ylim = c(0.3, 0.6), lwd = 2)
+     xlab = "CD Percent Republican", ylab = "Estimated Probability of Vaccination", ylim = c(0.4, 0.8), lwd = 2)
 
 lines(CD_PERCENT_DEMOCRAT_range, rep_in_rep_mask_values, type = "l", col = "red", lwd = 2)
 lines(CD_PERCENT_DEMOCRAT_range, ind_in_rep_mask_values, type = "l", col = "gray", lwd = 2)
@@ -523,7 +630,7 @@ ind_in_rep_vax_values <- .5 + (rep_in_vax_model$coefficients["CD_PERCENT_DEMOCRA
 
 plot(CD_PERCENT_DEMOCRAT_range, dem_in_rep_mask_values, type = "l", col = "blue",
      main = "Estimated Relationship between CD Percent Republican and Masked Contacts",
-     xlab = "CD Percent Republican", ylab = "Estimated Proportion Masked Contacts", ylim = c(0.3, 0.6), lwd = 2)
+     xlab = "CD Percent Republican", ylab = "Estimated Proportion Masked Contacts", ylim = c(0.4, 0.8), lwd = 2)
 
 lines(CD_PERCENT_DEMOCRAT_range, rep_in_rep_mask_values, type = "l", col = "red", lwd = 2)
 lines(CD_PERCENT_DEMOCRAT_range, ind_in_rep_mask_values, type = "l", col = "gray", lwd = 2)
@@ -534,5 +641,31 @@ legend("topright",
        legend = c("Democrats", "Republicans", "Independents"), 
        col = c("blue", "red","gray"), 
        lty = 1, lwd = 2)
+```
+save to png
+```{r}
+output_file_path <- "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Vaccines/d_cd_vaccines.png"
+
+png(filename = output_file_path, width = 800, height = 600)
+
+dem_in_rep_vax_values <- .5 + (dem_in_vax_model$coefficients["CD_PERCENT_DEMOCRAT"]) * CD_PERCENT_DEMOCRAT_range
+rep_in_rep_vax_values <- .5 + (rep_in_vax_model$coefficients["CD_PERCENT_DEMOCRAT"]) * CD_PERCENT_DEMOCRAT_range
+ind_in_rep_vax_values <- .5 + (rep_in_vax_model$coefficients["CD_PERCENT_DEMOCRAT"]) * CD_PERCENT_DEMOCRAT_range
+
+plot(CD_PERCENT_DEMOCRAT_range, dem_in_rep_mask_values, type = "l", col = "blue",
+     main = "Estimated Relationship between CD Percent Republican and Masked Contacts",
+     xlab = "CD Percent Republican", ylab = "Estimated Proportion Masked Contacts", ylim = c(0.4, 0.8), lwd = 2)
+
+lines(CD_PERCENT_DEMOCRAT_range, rep_in_rep_mask_values, type = "l", col = "red", lwd = 2)
+lines(CD_PERCENT_DEMOCRAT_range, ind_in_rep_mask_values, type = "l", col = "gray", lwd = 2)
+
+grid()
+
+legend("topright", 
+       legend = c("Democrats", "Republicans", "Independents"), 
+       col = c("blue", "red","gray"), 
+       lty = 1, lwd = 2)
+
+dev.off()
 ```
 

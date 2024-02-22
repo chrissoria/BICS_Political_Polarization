@@ -154,4 +154,39 @@ mask_pred_plot
 
 rm(mask_pred_plot, cd_masked_contact_model)
 ```
+Vaccination
+```{r}
+cd_vaccination_model <- lm(Vaccinated ~  log_rate_prev_12_01_20 + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + political_party_to_CD + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave, 
+                              data = bics_zip_features,
+                              weights = weight_pooled)
+
+print(summary(cd_vaccination_model))
+
+vaccination_pred_plot <- plot_model(
+  cd_vaccination_model,
+  colors = "black",
+  type = "pred",
+  auto.label = FALSE,
+  terms = c("political_party_to_CD[Democrat in Democratic led CD, Democrat in Republican led CD, Republican in Democratic led CD, Republican in Republican led CD]"),
+  title = "Partisan Differences in Vaccination Across Opposing \nParty Districts",
+  axis.title = c("", "Predicted Proportion Vaccinated")
+) +
+theme_minimal() +
+  theme(
+    legend.position = "none",
+    axis.text.y = element_text(size = 20), 
+    axis.title.y = element_text(size = 20), 
+    axis.text.x = element_text(size = 14), 
+    axis.title.x = element_text(size = 14),  
+    plot.title = element_text(size = 28, face = "bold"), 
+    plot.subtitle = element_text(size = 15)
+  ) +
+  geom_point(size = 5) 
+
+ggsave("cd_vaccines_pooled.png", plot = vaccination_pred_plot, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Vaccines", width = 12, height = 8, units = "in")
+
+vaccination_pred_plot
+
+rm(vaccination_pred_plot, cd_vaccination_model)
+```
 
