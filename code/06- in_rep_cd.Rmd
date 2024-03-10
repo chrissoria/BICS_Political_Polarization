@@ -4,20 +4,26 @@ author: "Christopher Soria"
 date: "2024-02-18"
 output: html_document
 ---
+
+```{r}
+library(tidyverse)
+library(MASS)
+```
+
 models
 I'm dropping weights since they no longer apply well after sub-setting the data
 Step 1. Do not control for either political ideology nor mask mandates
 ```{r}
-dem_in_rep_concern_model <- lm(binary_concern_strong ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
+dem_in_rep_concern_model <- lm(binary_concern_strong ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
                                    data = D_df)
 
-rep_in_rep_concern_model <- lm(binary_concern_strong ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + extreme_liberal + extreme_conservative + CD_PERCENT_REPUBLICAN, 
+rep_in_rep_concern_model <- lm(binary_concern_strong ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
                                    data = R_df)
 
-ind_in_rep_concern_model <- lm(binary_concern_strong ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
+ind_in_rep_concern_model <- lm(binary_concern_strong ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
                                    data = I_df)
 
-cd_percent_republican_range <- seq(min(D_df$CD_PERCENT_REPUBLICAN), max(D_df$CD_PERCENT_REPUBLICAN), length.out = 100)
+cd_percent_republican_range <- seq(min(D_df$CD_PERCENT_REPUBLICAN, na.rm = TRUE), max(D_df$CD_PERCENT_REPUBLICAN,na.rm = TRUE), length.out = 100)
 
 concern_dem_in_rep_values <- .7 + (dem_in_rep_concern_model$coefficients["CD_PERCENT_REPUBLICAN"]) * cd_percent_republican_range
 rep_concern_in_rep_values <- .7 + (rep_in_rep_concern_model$coefficients["CD_PERCENT_REPUBLICAN"]) * cd_percent_republican_range
@@ -44,16 +50,16 @@ legend("topright",
 
 Step 2. Control for political ideology
 ```{r}
-dem_in_rep_concern_model <- lm(binary_concern_strong ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + extreme_liberal + extreme_conservative + CD_PERCENT_REPUBLICAN, 
+dem_in_rep_concern_model <- lm(binary_concern_strong ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + extreme_liberal + CD_PERCENT_REPUBLICAN, 
                                    data = D_df)
 
-rep_in_rep_concern_model <- lm(binary_concern_strong ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + extreme_liberal + extreme_conservative + CD_PERCENT_REPUBLICAN, 
+rep_in_rep_concern_model <- lm(binary_concern_strong ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + extreme_conservative + CD_PERCENT_REPUBLICAN, 
                                    data = R_df)
 
-ind_in_rep_concern_model <- lm(binary_concern_strong ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + extreme_liberal + extreme_conservative + CD_PERCENT_REPUBLICAN, 
+ind_in_rep_concern_model <- lm(binary_concern_strong ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + extreme_liberal + extreme_conservative + CD_PERCENT_REPUBLICAN, 
                                    data = I_df)
 
-cd_percent_republican_range <- seq(min(D_df$CD_PERCENT_REPUBLICAN), max(D_df$CD_PERCENT_REPUBLICAN), length.out = 100)
+cd_percent_republican_range <- seq(min(D_df$CD_PERCENT_REPUBLICAN, na.rm = TRUE), max(D_df$CD_PERCENT_REPUBLICAN,na.rm = TRUE), length.out = 100)
 
 concern_dem_in_rep_values <- .7 + (dem_in_rep_concern_model$coefficients["CD_PERCENT_REPUBLICAN"]) * cd_percent_republican_range
 rep_concern_in_rep_values <- .7 + (rep_in_rep_concern_model$coefficients["CD_PERCENT_REPUBLICAN"]) * cd_percent_republican_range
@@ -82,16 +88,16 @@ Step 3. Control for political ideology and mask mandates
 Neither mask mandaetes nor political ideology seem to matter in terms of shifting people's stated concern about the spread of the virus
 ```{r}
 #concern
-dem_in_rep_concern_model <- lm(binary_concern_strong ~  log_rate_prev_12_01_20 + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + extreme_liberal + extreme_conservative + CD_PERCENT_REPUBLICAN, 
+dem_in_rep_concern_model <- lm(binary_concern_strong ~  log_rate_prev_12_01_20 + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + extreme_liberal + CD_PERCENT_REPUBLICAN, 
                                    data = D_df)
 
-rep_in_rep_concern_model <- lm(binary_concern_strong ~  log_rate_prev_12_01_20 + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + extreme_liberal + extreme_conservative + CD_PERCENT_REPUBLICAN, 
+rep_in_rep_concern_model <- lm(binary_concern_strong ~  log_rate_prev_12_01_20 + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + extreme_conservative + CD_PERCENT_REPUBLICAN, 
                                    data = R_df)
 
-ind_in_rep_concern_model <- lm(binary_concern_strong ~  log_rate_prev_12_01_20 + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + extreme_liberal + extreme_conservative + CD_PERCENT_REPUBLICAN, 
+ind_in_rep_concern_model <- lm(binary_concern_strong ~  log_rate_prev_12_01_20 + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + extreme_liberal + extreme_conservative + CD_PERCENT_REPUBLICAN, 
                                    data = I_df)
 
-cd_percent_republican_range <- seq(min(D_df$CD_PERCENT_REPUBLICAN), max(D_df$CD_PERCENT_REPUBLICAN), length.out = 100)
+cd_percent_republican_range <- seq(min(D_df$CD_PERCENT_REPUBLICAN, na.rm = TRUE), max(D_df$CD_PERCENT_REPUBLICAN,na.rm = TRUE), length.out = 100)
 
 concern_dem_in_rep_values <- .7 + (dem_in_rep_concern_model$coefficients["CD_PERCENT_REPUBLICAN"]) * cd_percent_republican_range
 rep_concern_in_rep_values <- .7 + (rep_in_rep_concern_model$coefficients["CD_PERCENT_REPUBLICAN"]) * cd_percent_republican_range
@@ -121,7 +127,7 @@ output_file_path <- "/Users/chrissoria/Documents/Research/BICS_Political_Polariz
 
 png(filename = output_file_path, width = 800, height = 600)
 
-cd_percent_republican_range <- seq(min(D_df$CD_PERCENT_REPUBLICAN), max(D_df$CD_PERCENT_REPUBLICAN), length.out = 100)
+cd_percent_republican_range <- seq(min(D_df$CD_PERCENT_REPUBLICAN, na.rm = TRUE), max(D_df$CD_PERCENT_REPUBLICAN,na.rm = TRUE), length.out = 100)
 
 concern_dem_in_rep_values <- .7 + (dem_in_rep_concern_model$coefficients["CD_PERCENT_REPUBLICAN"]) * cd_percent_republican_range
 rep_concern_in_rep_values <- .7 + (rep_in_rep_concern_model$coefficients["CD_PERCENT_REPUBLICAN"]) * cd_percent_republican_range
@@ -153,16 +159,16 @@ Step 1. Do not control for either political ideology not mask mandates
 Steepest slope is independent. Democrats are least likely to change their statement on whether they have reduced contact as republicans in district increase.
 ```{r}
 #contact reduction
-dem_in_rep_contact_reduction_model <- lm(contact_reduction ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
+dem_in_rep_contact_reduction_model <- lm(contact_reduction ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
                                    data = D_df)
 
-rep_in_rep_contact_reduction_model <- lm(contact_reduction ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
+rep_in_rep_contact_reduction_model <- lm(contact_reduction ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
                                    data = R_df)
 
-ind_in_rep_contact_reduction_model <- lm(contact_reduction ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
+ind_in_rep_contact_reduction_model <- lm(contact_reduction ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
                                    data = I_df)
 
-cd_percent_republican_range <- seq(min(D_df$CD_PERCENT_REPUBLICAN), max(D_df$CD_PERCENT_REPUBLICAN), length.out = 100)
+cd_percent_republican_range <- seq(min(D_df$CD_PERCENT_REPUBLICAN, na.rm = TRUE), max(D_df$CD_PERCENT_REPUBLICAN,na.rm = TRUE), length.out = 100)
 
 contact_reduction_dem_in_rep_values <- .7 + (dem_in_rep_contact_reduction_model$coefficients["CD_PERCENT_REPUBLICAN"]) * cd_percent_republican_range
 contact_reduction_rep_in_rep_values <- .7 + (rep_in_rep_contact_reduction_model$coefficients["CD_PERCENT_REPUBLICAN"]) * cd_percent_republican_range
@@ -187,16 +193,16 @@ Step 2. Control for political ideology
 Makes the slope less steep but doesn't change the pattern. 
 ```{r}
 #contact reduction
-dem_in_rep_contact_reduction_model <- lm(contact_reduction ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + extreme_liberal + extreme_conservative + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
+dem_in_rep_contact_reduction_model <- lm(contact_reduction ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + extreme_liberal + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
                                    data = D_df)
 
-rep_in_rep_contact_reduction_model <- lm(contact_reduction ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + extreme_liberal + extreme_conservative + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
+rep_in_rep_contact_reduction_model <- lm(contact_reduction ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + extreme_conservative + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
                                    data = R_df)
 
-ind_in_rep_contact_reduction_model <- lm(contact_reduction ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + extreme_liberal + extreme_conservative + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
+ind_in_rep_contact_reduction_model <- lm(contact_reduction ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + extreme_liberal + extreme_conservative + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
                                    data = I_df)
 
-cd_percent_republican_range <- seq(min(D_df$CD_PERCENT_REPUBLICAN), max(D_df$CD_PERCENT_REPUBLICAN), length.out = 100)
+cd_percent_republican_range <- seq(min(D_df$CD_PERCENT_REPUBLICAN, na.rm = TRUE), max(D_df$CD_PERCENT_REPUBLICAN,na.rm = TRUE), length.out = 100)
 
 contact_reduction_dem_in_rep_values <- .7 + (dem_in_rep_contact_reduction_model$coefficients["CD_PERCENT_REPUBLICAN"]) * cd_percent_republican_range
 contact_reduction_rep_in_rep_values <- .7 + (rep_in_rep_contact_reduction_model$coefficients["CD_PERCENT_REPUBLICAN"]) * cd_percent_republican_range
@@ -221,16 +227,16 @@ Step 3. Control for county mask mandates
 Steepens the curve and independents are most likely to switch away from saying they greatly reduced their contact as a result of the pandemic as more republicans populate a congressional district. 
 ```{r}
 #contact reduction
-dem_in_rep_contact_reduction_model <- lm(contact_reduction ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + county_mask_mandate + male + educ_group + resp_yob + r_working + Income_Category + r_race + extreme_liberal + extreme_conservative + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
+dem_in_rep_contact_reduction_model <- lm(contact_reduction ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + county_mask_mandate + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + extreme_liberal + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
                                    data = D_df)
 
-rep_in_rep_contact_reduction_model <- lm(contact_reduction ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + county_mask_mandate + male + educ_group + resp_yob + r_working + Income_Category + r_race + extreme_liberal + extreme_conservative + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
+rep_in_rep_contact_reduction_model <- lm(contact_reduction ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + county_mask_mandate + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + extreme_conservative + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
                                    data = R_df)
 
-ind_in_rep_contact_reduction_model <- lm(contact_reduction ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + county_mask_mandate + male + educ_group + resp_yob + r_working + Income_Category + r_race + extreme_liberal + extreme_conservative + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
+ind_in_rep_contact_reduction_model <- lm(contact_reduction ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + county_mask_mandate + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + extreme_liberal + extreme_conservative + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
                                    data = I_df)
 
-cd_percent_republican_range <- seq(min(D_df$CD_PERCENT_REPUBLICAN), max(D_df$CD_PERCENT_REPUBLICAN), length.out = 100)
+cd_percent_republican_range <- seq(min(D_df$CD_PERCENT_REPUBLICAN, na.rm = TRUE), max(D_df$CD_PERCENT_REPUBLICAN,na.rm = TRUE), length.out = 100)
 
 contact_reduction_dem_in_rep_values <- .7 + (dem_in_rep_contact_reduction_model$coefficients["CD_PERCENT_REPUBLICAN"]) * cd_percent_republican_range
 contact_reduction_rep_in_rep_values <- .7 + (rep_in_rep_contact_reduction_model$coefficients["CD_PERCENT_REPUBLICAN"]) * cd_percent_republican_range
@@ -257,7 +263,7 @@ output_file_path <- "/Users/chrissoria/Documents/Research/BICS_Political_Polariz
 
 png(filename = output_file_path, width = 800, height = 600)
 
-cd_percent_republican_range <- seq(min(D_df$CD_PERCENT_REPUBLICAN), max(D_df$CD_PERCENT_REPUBLICAN), length.out = 100)
+cd_percent_republican_range <- seq(min(D_df$CD_PERCENT_REPUBLICAN, na.rm = TRUE), max(D_df$CD_PERCENT_REPUBLICAN,na.rm = TRUE), length.out = 100)
 
 contact_reduction_dem_in_rep_values <- .7 + (dem_in_rep_contact_reduction_model$coefficients["CD_PERCENT_REPUBLICAN"]) * cd_percent_republican_range
 contact_reduction_rep_in_rep_values <- .7 + (rep_in_rep_contact_reduction_model$coefficients["CD_PERCENT_REPUBLICAN"]) * cd_percent_republican_range
@@ -286,13 +292,13 @@ Step 1. Do not control for either political ideology not mask mandates
 When I do not control for mask mandates or political ideology, republicans and democrats look pretty similar in how they're impacted by being surrounded by more republicans. Independents have the steepest slop upwards. 
 ```{r}
 ##contacts
-dem_in_rep_contact_model <- glm.nb(num_cc_nonhh ~  log_rate_prev_12_01_20 + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + cityNY +`cityBay Area` + cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
+dem_in_rep_contact_model <- glm.nb(num_cc_nonhh ~  log_rate_prev_12_01_20 + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + cityNY +`cityBay Area` + cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
                                    data = D_df)
 
-rep_in_rep_contact_model <- glm.nb(num_cc_nonhh ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
+rep_in_rep_contact_model <- glm.nb(num_cc_nonhh ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
                                    data = R_df)
 
-ind_in_rep_contact_model <- glm.nb(num_cc_nonhh ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave  + CD_PERCENT_REPUBLICAN, 
+ind_in_rep_contact_model <- glm.nb(num_cc_nonhh ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave  + CD_PERCENT_REPUBLICAN, 
                                    data = I_df)
 
 print(summary(dem_in_rep_contact_model))
@@ -324,13 +330,13 @@ legend("topright",
 Step 2. Control for political ideology
 Controlling for political ideology doesn't change much, but democrats and republicans look more similar
 ```{r}
-dem_in_rep_contact_model <- glm.nb(num_cc_nonhh ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + extreme_liberal + extreme_conservative + cityNY +`cityBay Area` + cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
+dem_in_rep_contact_model <- glm.nb(num_cc_nonhh ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + extreme_liberal + cityNY +`cityBay Area` + cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
                                    data = D_df)
 
-rep_in_rep_contact_model <- glm.nb(num_cc_nonhh ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + extreme_liberal + extreme_conservative  + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
+rep_in_rep_contact_model <- glm.nb(num_cc_nonhh ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + extreme_conservative  + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
                                    data = R_df)
 
-ind_in_rep_contact_model <- glm.nb(num_cc_nonhh ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + extreme_liberal + extreme_conservative  + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave  + CD_PERCENT_REPUBLICAN, 
+ind_in_rep_contact_model <- glm.nb(num_cc_nonhh ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + extreme_liberal + extreme_conservative  + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave  + CD_PERCENT_REPUBLICAN, 
                                    data = I_df)
 
 print(summary(dem_in_rep_contact_model))
@@ -358,13 +364,13 @@ legend("topright",
 Step 3. control for county-level mask mandates
 Something funny is going on below. When I control for mask mandates, republican behavior is not at all impacted by how many republicans are around them, but democrats are. This implies that much of the effect of Republicans increasing contacts in higher republican concentrated congressional districts is due to county-level mandates. In other words, regardless of whether a county-mandates exist, democrats and republicans are more likely to interact with non-household contacts when surrounded by more republicans. 
 ```{r}
-dem_in_rep_contact_model <- glm.nb(num_cc_nonhh ~  log_rate_prev_12_01_20 + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + extreme_liberal + extreme_conservative + cityNY +`cityBay Area` + cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
+dem_in_rep_contact_model <- glm.nb(num_cc_nonhh ~  log_rate_prev_12_01_20 + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + extreme_liberal + cityNY +`cityBay Area` + cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
                                    data = D_df)
 
-rep_in_rep_contact_model <- glm.nb(num_cc_nonhh ~  log_rate_prev_12_01_20 + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + extreme_liberal + extreme_conservative  + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
+rep_in_rep_contact_model <- glm.nb(num_cc_nonhh ~  log_rate_prev_12_01_20 + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + extreme_liberal  + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
                                    data = R_df)
 
-ind_in_rep_contact_model <- glm.nb(num_cc_nonhh ~  log_rate_prev_12_01_20 + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + extreme_liberal + extreme_conservative  + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave  + CD_PERCENT_REPUBLICAN, 
+ind_in_rep_contact_model <- glm.nb(num_cc_nonhh ~  log_rate_prev_12_01_20 + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + extreme_liberal + extreme_conservative  + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave  + CD_PERCENT_REPUBLICAN, 
                                    data = I_df)
 
 print(summary(dem_in_rep_contact_model))
@@ -420,13 +426,13 @@ dev.off()
 Mask usage
 Step 1.
 ```{r}
-dem_in_rep_mask_model <- lm(Norm_Masks_Used ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
+dem_in_rep_mask_model <- lm(Norm_Masks_Used ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
                                    data = D_df)
 
-rep_in_rep_mask_model <- lm(Norm_Masks_Used ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
+rep_in_rep_mask_model <- lm(Norm_Masks_Used ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
                                    data = R_df)
 
-ind_in_rep_mask_model <- lm(Norm_Masks_Used ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
+ind_in_rep_mask_model <- lm(Norm_Masks_Used ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
                                    data = I_df)
 
 print(summary(dem_in_rep_mask_model))
@@ -453,13 +459,13 @@ legend("topright",
 ```
 Step 2. Control for political ideology
 ```{r}
-dem_in_rep_mask_model <- lm(Norm_Masks_Used ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + extreme_liberal + extreme_conservative + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
+dem_in_rep_mask_model <- lm(Norm_Masks_Used ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + extreme_liberal + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
                                    data = D_df)
 
-rep_in_rep_mask_model <- lm(Norm_Masks_Used ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + extreme_liberal + extreme_conservative + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
+rep_in_rep_mask_model <- lm(Norm_Masks_Used ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + extreme_conservative + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
                                    data = R_df)
 
-ind_in_rep_mask_model <- lm(Norm_Masks_Used ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + extreme_liberal + extreme_conservative + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
+ind_in_rep_mask_model <- lm(Norm_Masks_Used ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + extreme_liberal + extreme_conservative + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
                                    data = I_df)
 
 print(summary(dem_in_rep_mask_model))
@@ -487,13 +493,13 @@ legend("topright",
 Step 3. control for both poltical ideology and county-level mask mandate
 conclusion. Neither political ideology nor mask mandates change the pattern, but both seem to make the R and D slopes appear to be more similar. 
 ```{r}
-dem_in_rep_mask_model <- lm(Norm_Masks_Used ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + county_mask_mandate + educ_group + resp_yob + r_working + Income_Category + r_race + extreme_liberal + extreme_conservative + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
+dem_in_rep_mask_model <- lm(Norm_Masks_Used ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + county_mask_mandate + educ_group + resp_yob + r_working + resp_hhsize + r_race + extreme_liberal + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
                                    data = D_df)
 
-rep_in_rep_mask_model <- lm(Norm_Masks_Used ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + county_mask_mandate + educ_group + resp_yob + r_working + Income_Category + r_race + extreme_liberal + extreme_conservative + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
+rep_in_rep_mask_model <- lm(Norm_Masks_Used ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + county_mask_mandate + educ_group + resp_yob + r_working + resp_hhsize + r_race + extreme_conservative + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
                                    data = R_df)
 
-ind_in_rep_mask_model <- lm(Norm_Masks_Used ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + county_mask_mandate + educ_group + resp_yob + r_working + Income_Category + r_race + extreme_liberal + extreme_conservative + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
+ind_in_rep_mask_model <- lm(Norm_Masks_Used ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + county_mask_mandate + educ_group + resp_yob + r_working + resp_hhsize + r_race + extreme_liberal + extreme_conservative + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + CD_PERCENT_REPUBLICAN, 
                                    data = I_df)
 
 print(summary(dem_in_rep_mask_model))
@@ -549,13 +555,13 @@ Vaccination
 Step 1. no controls
 Not significant
 ```{r}
-dem_in_vax_model <- lm(Vaccinated ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + CD_PERCENT_REPUBLICAN, 
+dem_in_vax_model <- lm(Vaccinated ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + CD_PERCENT_REPUBLICAN, 
                                    data = D_df)
 
-rep_in_vax_model <- lm(Vaccinated ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + CD_PERCENT_REPUBLICAN, 
+rep_in_vax_model <- lm(Vaccinated ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + CD_PERCENT_REPUBLICAN, 
                                    data = R_df)
 
-ind_in_vax_model <- lm(Vaccinated ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + CD_PERCENT_REPUBLICAN, 
+ind_in_vax_model <- lm(Vaccinated ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + CD_PERCENT_REPUBLICAN, 
                                    data = I_df)
 
 print(summary(dem_in_vax_model))
@@ -584,13 +590,13 @@ legend("topright",
 Step 2. 
 Not significant
 ```{r}
-dem_in_vax_model <- lm(Vaccinated ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + extreme_liberal + extreme_conservative + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + CD_PERCENT_REPUBLICAN, 
+dem_in_vax_model <- lm(Vaccinated ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + extreme_conservative + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + CD_PERCENT_REPUBLICAN, 
                                    data = D_df)
 
-rep_in_vax_model <- lm(Vaccinated ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + extreme_liberal + extreme_conservative + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + CD_PERCENT_REPUBLICAN, 
+rep_in_vax_model <- lm(Vaccinated ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + extreme_conservative + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + CD_PERCENT_REPUBLICAN, 
                                    data = R_df)
 
-ind_in_vax_model <- lm(Vaccinated ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + Income_Category + r_race + extreme_liberal + extreme_conservative + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + CD_PERCENT_REPUBLICAN, 
+ind_in_vax_model <- lm(Vaccinated ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + extreme_liberal + extreme_conservative + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + CD_PERCENT_REPUBLICAN, 
                                    data = I_df)
 
 print(summary(dem_in_vax_model))
@@ -618,13 +624,13 @@ legend("topright",
 Step 3. all controls
 not significant
 ```{r}
-dem_in_vax_model <- lm(Vaccinated ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + county_mask_mandate + male + educ_group + resp_yob + r_working + Income_Category + r_race + extreme_liberal + extreme_conservative + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + CD_PERCENT_REPUBLICAN, 
+dem_in_vax_model <- lm(Vaccinated ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + county_mask_mandate + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + extreme_liberal + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + CD_PERCENT_REPUBLICAN, 
                                    data = D_df)
 
-rep_in_vax_model <- lm(Vaccinated ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + county_mask_mandate + male + educ_group + resp_yob + r_working + Income_Category + r_race + extreme_liberal + extreme_conservative + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + CD_PERCENT_REPUBLICAN, 
+rep_in_vax_model <- lm(Vaccinated ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + county_mask_mandate + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + extreme_conservative + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + CD_PERCENT_REPUBLICAN, 
                                    data = R_df)
 
-ind_in_vax_model <- lm(Vaccinated ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + county_mask_mandate + male + educ_group + resp_yob + r_working + Income_Category + r_race + extreme_liberal + extreme_conservative + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + CD_PERCENT_REPUBLICAN, 
+ind_in_vax_model <- lm(Vaccinated ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + county_mask_mandate + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + extreme_liberal + extreme_conservative + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + CD_PERCENT_REPUBLICAN, 
                                    data = I_df)
 
 print(summary(dem_in_vax_model))
@@ -633,7 +639,7 @@ print(summary(ind_in_vax_model))
 
 dem_in_rep_vax_values <- .5 + (dem_in_vax_model$coefficients["CD_PERCENT_REPUBLICAN"]) * cd_percent_republican_range
 rep_in_rep_vax_values <- .5 + (rep_in_vax_model$coefficients["CD_PERCENT_REPUBLICAN"]) * cd_percent_republican_range
-ind_in_rep_vax_values <- .5 + (rep_in_vax_model$coefficients["CD_PERCENT_REPUBLICAN"]) * cd_percent_republican_range
+ind_in_rep_vax_values <- .5 + (ind_in_vax_model$coefficients["CD_PERCENT_REPUBLICAN"]) * cd_percent_republican_range
 
 plot(cd_percent_republican_range, dem_in_rep_mask_values, type = "l", col = "blue",
      main = "Estimated Relationship between CD Percent Republican and Vaccination",
@@ -657,7 +663,7 @@ png(filename = output_file_path, width = 800, height = 600)
 
 dem_in_rep_vax_values <- .5 + (dem_in_vax_model$coefficients["CD_PERCENT_REPUBLICAN"]) * cd_percent_republican_range
 rep_in_rep_vax_values <- .5 + (rep_in_vax_model$coefficients["CD_PERCENT_REPUBLICAN"]) * cd_percent_republican_range
-ind_in_rep_vax_values <- .5 + (rep_in_vax_model$coefficients["CD_PERCENT_REPUBLICAN"]) * cd_percent_republican_range
+ind_in_rep_vax_values <- .5 + (ind_in_vax_model$coefficients["CD_PERCENT_REPUBLICAN"]) * cd_percent_republican_range
 
 plot(cd_percent_republican_range, dem_in_rep_mask_values, type = "l", col = "blue",
      main = "Estimated Relationship between CD Percent Republican and Vaccination",
@@ -674,5 +680,16 @@ legend("topright",
        lty = 1, lwd = 2)
 
 dev.off()
+```
+
+```{r}
+rm(dem_in_vax_model,dem_in_vax_model,ind_in_vax_model,dem_in_rep_vax_values,rep_in_rep_vax_values,ind_in_rep_vax_values)
+rm(dem_in_rep_mask_model,rep_in_rep_mask_model,ind_in_rep_mask_model,dem_in_rep_mask_values,rep_in_rep_mask_values,ind_in_rep_mask_values)
+rm(dem_in_rep_contact_model,rep_in_rep_contact_model,ind_in_rep_contact_model,dem_in_rep_contact_values,rep_in_rep_contact_values,ind_in_rep_contact_values)
+rm(dem_in_rep_concern_model,rep_in_rep_concern_model,ind_in_rep_concern_model,concern_dem_in_rep_values,rep_concern_in_rep_values,ind_concern_in_rep_values)
+rm(dem_in_rep_contact_model,rep_in_rep_contact_model,rep_in_vax_model,rvd_masks_model,ind_in_vax_model,ind_in_rep_contact_model,dem_in_vax_model,ind_in_rep_mask_model)
+rm(dem_in_rep_contact_model,ind_in_rep_mask_model, rep_in_rep_contact_model, rep_in_rep_contact_reduction_model, ind_in_rep_contact_reduction_model, dem_in_rep_contact_reduction_model)
+rm(CD_PERCENT_DEMOCRAT_range,cd_percent_republican_range,concern_in_rep_values,contact_reduction_rep_in_rep_values)
+rm(contact_reduction_ind_in_rep_values, contact_reduction_dem_in_rep_values,contact_reduction_dem_in_rep_values, contact_reduction_ind_in_rep_values)
 ```
 

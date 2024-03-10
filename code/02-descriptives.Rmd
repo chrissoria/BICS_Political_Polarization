@@ -1,0 +1,280 @@
+---
+title: "01-descriptives"
+author: "Christopher Soria"
+date: "2024-03-08"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(dplyr)
+```
+Overall Findings and questions:
+1. Working is correlated with the dependent variables but not independent variables of interest (political party). Do we still control for this?
+2. Republicans within democratic districts look to be more likely to be employed than republicans in republican districts. The opposite is true for Democrats (probably a function of being in locations that are easier to get jobs in). Does it make sense to control for employment only in the models where I'm comparing same party identifcation in these different settings?
+3. Some of these differences probably change through the pandemic, would it be worth to look at how these averages differ throughout the pandemic?
+4. Republicans in highly democratic congressional districts are less likely to be extremely conservative. Does this mean that it's important to control extreme conservative and extreme liberal in models where I'm trying to get at the difference between the two groups (those in opposing districts versus those in their own)?
+5. Compared to Republicans, Democrats are much less likely to live in an opposing party district. Could this be a result of how sample was collected?
+5. There shouldn't be differences in these outcomes by wave. For example, in wave 2 it should not be more or less likely that republicans versus democrats have smaller household sizes, etc. What are the implications on this? Does it even make sense to control for wave when we're conducting a pooled analysis (with the interpretation being something like, regardless of which wave of data this coming for, democrats are more likely to XYZ. But does including wave dilute any of the effects of interest?) 
+6. Does it still make sense to use the pooled weights when I'm subsetting for political party affiliation?
+
+
+
+High level findings:
+- It probably doesn't need to be that we control for whether the respondent is working (type of employment might be more important)
+
+Detailed findings:
+- Democrats have slightly smaller household sizes (maybe not statistically significant)
+- Democrats are more likely to be Hispanic
+- Democrats are less likely to be White
+- Independents are less likely to be employed (maybe not statistically significant)
+- Democrats are more likely to be in densely urbanized areas than both independents and republicans
+- Democrats are more likely to have at least a college education than both independents and republicans
+- Independents are the least likely to get a college degree
+- Republicans are more likely to be male
+- Republicans are older than both democrats and independents
+```{r}
+filtered_df <- bics_zip_features %>% 
+  filter(political_party != "Prefer not to answer") %>% 
+  filter(!is.na(political_party))
+
+average_by_party <- filtered_df %>%
+  group_by(political_party) %>%
+  summarise(
+    average_age = mean(age, na.rm = TRUE),
+    average_male = mean(male, na.rm = TRUE),
+    average_college = mean(r_college_grad, na.rm = TRUE),
+    average_employed = mean(r_working_num, na.rm = TRUE),
+    average_white = mean(white, na.rm = TRUE),
+    average_hispanic = mean(r_hispanic_num, na.rm = TRUE),
+    average_household_size = mean(resp_hhsize, na.rm = TRUE),
+    average_urban = mean(COUNTY_RUCC_2013, na.rm = TRUE)
+  )
+
+average_by_party
+```
+What about concern about the virus?
+
+High level findings:
+-It's important to control for all of these
+
+Detailed findings: 
+- (surprisingly) the younger are more likely to be concerned
+- (surprisingly) male are more likely to say they are extremely concerned
+- the college educated are more likely to say they're concerned
+- the concerned are more likely to be non-white
+- the concerned are more likely to be hispanic
+- the concerned come from larger household family sizes
+- the concerend are more likely to come from more densely urbanized environments
+```{r}
+average_by_concern <- filtered_df %>%
+  group_by(binary_concern_strong) %>%
+  summarise(
+    average_age = mean(age, na.rm = TRUE),
+    average_male = mean(male, na.rm = TRUE),
+    average_college = mean(r_college_grad, na.rm = TRUE),
+    average_employed = mean(r_working_num, na.rm = TRUE),
+    average_white = mean(white, na.rm = TRUE),
+    average_hispanic = mean(r_hispanic_num, na.rm = TRUE),
+    average_household_size = mean(resp_hhsize, na.rm = TRUE),
+    average_urban = mean(COUNTY_RUCC_2013, na.rm = TRUE)
+  )
+
+average_by_concern
+```
+Now let's look by vaccination status
+High level findings
+-Differences in all of these for vaccination status, especially for college educated, not much difference between hispanic and non-hispanics
+
+Detailed findings: 
+- people who are vaccinated are older
+- people who are vaccinated are more likely to be male
+- people who are vaccinated are WAY more likely to be college educated
+- people who are vaccinated are more likely to be employed
+- people who are vaccinated are more likely to white
+- no difference for Hispanic
+- people who are vaccinated are coming from smaler household sizes
+- vaccinated people are more likely to come from densely urbanized counties
+```{r}
+average_by_vaccine <- filtered_df %>%
+  group_by(Vaccinated) %>%
+  filter(!is.na(Vaccinated)) %>% 
+  summarise(
+    average_age = mean(age, na.rm = TRUE),
+    average_male = mean(male, na.rm = TRUE),
+    average_college = mean(r_college_grad, na.rm = TRUE),
+    average_employed = mean(r_working_num, na.rm = TRUE),
+    average_white = mean(white, na.rm = TRUE),
+    average_hispanic = mean(r_hispanic_num, na.rm = TRUE),
+    average_household_size = mean(resp_hhsize, na.rm = TRUE),
+    average_urban = mean(COUNTY_RUCC_2013, na.rm = TRUE)
+  )
+
+average_by_vaccine
+```
+
+
+
+What about reported non-household contacts? Breaking out into above and below average
+
+High level findings:
+- Even though some of these are only slightly different between groups, all of these categories differ in how many non-household contacts they report
+
+Detailed findings:
+- (surprisingly) people who report above average non-household contacts are younger
+- (surprisingly) people who report above average non-household contacts are slightly more likely to be male
+- (surprisingly) people who report above average non-household contacts are slightly more likely to be college educated
+- people who report above average non-household contacts are more likely to be employed
+- people who report above average non-household contacts are more likely to be white
+- people who report above average non-household contacts are slightly less likely to be Hispanic
+- (surprisingly) people who report above average non-household contacts are those with higher household size
+- people who report below average non-household contacts are more likely to come from dense urbanized settings
+```{r}
+average_by_contacts <- filtered_df %>%
+  group_by(num_cc_nonhh > mean(num_cc_nonhh, na.rm = TRUE)) %>%
+  filter(!is.na(Contacts)) %>% 
+  summarise(
+    average_age = mean(age, na.rm = TRUE),
+    average_male = mean(male, na.rm = TRUE),
+    average_college = mean(r_college_grad, na.rm = TRUE),
+    average_employed = mean(r_working_num, na.rm = TRUE),
+    average_white = mean(white, na.rm = TRUE),
+    average_hispanic = mean(r_hispanic_num, na.rm = TRUE),
+    average_household_size = mean(resp_hhsize, na.rm = TRUE),
+    average_urban = mean(COUNTY_RUCC_2013, na.rm = TRUE)
+  )
+
+average_by_contacts
+```
+What about masked contacts (grouped by greater than half == TRUE)
+
+High level findings:
+- All but age are different 
+
+Detailed Findings:
+- There's not much difference in age between groups
+- People who report mask usage more often are more likely to be male
+- People who report mask usage more often are more likely to be college educated
+- People who report mask usage more often are more likely to be employed
+- People who report mask usage more often are less likely to be white
+- People who report mask usage more often are slighly less likely to be Hispanic
+- People who report mask usage more often are more likely to come from a larger household
+- People who report mask usage more often more often from densely urbanized counties
+```{r}
+average_by_masks <- filtered_df %>%
+  group_by(Norm_Masks_Used > mean(Norm_Masks_Used, na.rm = TRUE)) %>% #anyone who wore a mask in greater than half of their interactions
+  filter(!is.na(Norm_Masks_Used)) %>% 
+  summarise(
+    average_age = mean(age, na.rm = TRUE),
+    average_male = mean(male, na.rm = TRUE),
+    average_college = mean(r_college_grad, na.rm = TRUE),
+    average_employed = mean(r_working_num, na.rm = TRUE),
+    average_white = mean(white, na.rm = TRUE),
+    average_hispanic = mean(r_hispanic_num, na.rm = TRUE),
+    average_household_size = mean(resp_hhsize, na.rm = TRUE),
+    average_urban = mean(COUNTY_RUCC_2013, na.rm = TRUE)
+  )
+
+average_by_masks
+```
+
+What about democrats who are within republican districts?
+High level findings:
+- Democrats in majority republican CD's resemble them in a few ways. They are older, whiter and less Hispanic, less likely to have a college education, less likely to be in highly urbanized counties. However, they differ in that they're less likely to be employed, have smaller household size. Compared to Republicans, Democrats are much less likely to live in an opposing party district (could just be a result of how sample was collected). 
+
+
+```{r}
+filtered_df_D <- D_df %>% 
+  filter(!is.na(CD_PERCENT_REPUBLICAN))
+
+average_by_CD_D <- filtered_df_D %>%
+  group_by(CD_PERCENT_REPUBLICAN > .5) %>%
+  summarise(
+    count = n(),
+    average_age = mean(age, na.rm = TRUE),
+    average_male = mean(male, na.rm = TRUE),
+    average_college = mean(r_college_grad, na.rm = TRUE),
+    average_employed = mean(r_working_num, na.rm = TRUE),
+    average_white = mean(white, na.rm = TRUE),
+    average_hispanic = mean(r_hispanic_num, na.rm = TRUE),
+    average_household_size = mean(resp_hhsize, na.rm = TRUE),
+    average_urban = mean(COUNTY_RUCC_2013, na.rm = TRUE),
+    average_extremism = mean(extreme_liberal, na.rm = TRUE)
+  )
+
+average_by_CD_D
+```
+And, what about republicans in democratic districts?
+High level findings:
+- Republicans in highly democratic areas resemble democrats. They're younger, they're more likely to have a college education, they're less white, more Hispanic, and more likely to live in a dense urban area. However, they're also likely to have a higher household size, more likely to be employed, more likely to be male. Republicans in highly democratic CD's are also less likely to be extreme conservatives. There's also a good amount of republicans in both categories. 
+
+```{r}
+filtered_df_R <- R_df %>% 
+  filter(!is.na(CD_PERCENT_DEMOCRAT))
+
+average_by_CD_R <- filtered_df_R %>%
+  group_by(CD_PERCENT_DEMOCRAT > .5) %>%
+  summarise(
+    count = n(),
+    average_age = mean(age, na.rm = TRUE),
+    average_male = mean(male, na.rm = TRUE),
+    average_college = mean(r_college_grad, na.rm = TRUE),
+    average_employed = mean(r_working_num, na.rm = TRUE),
+    average_white = mean(white, na.rm = TRUE),
+    average_hispanic = mean(r_hispanic_num, na.rm = TRUE),
+    average_household_size = mean(resp_hhsize, na.rm = TRUE),
+    average_urban = mean(COUNTY_RUCC_2013, na.rm = TRUE),
+    average_extremism = mean(extreme_conservative, na.rm = TRUE)
+  )
+
+average_by_CD_R
+```
+
+Lastly, I want to control for county mask mandates in order to understand whether, for example, republicans in democratic districts aren't just limited their interactions and wearing more masks because of masks. However, are there any democratic counties without mask mandates? Are there any republicans in democratic counties that don't have mask mandates?
+
+High level findings:
+- Democrats are more likely to live in strict mask mandate counties, but both republicans and democrats are both not very likely to live in places with no mask mandate at all.
+```{r}
+mask_mandates <- bics_zip_features %>%
+  filter(political_party != "Prefer not to answer" & political_party != "Independent") %>% 
+  filter(!is.na(county_mask_mandate)) %>% 
+  group_by(political_party, county_mask_mandate) %>%
+  summarise(
+    ount = n()
+  )
+
+mask_mandates
+```
+The group I'm most worried about is Republicans in majority democrat congressional districts without a county mask mandate.
+
+High Level Findings:
+- Although there are few, there are some republicans living in democratic-led CD's and in counties with no mask mandate (242)
+```{r}
+mask_mandates_R <- R_df %>%
+  filter(!is.na(county_mask_mandate)) %>% 
+  filter(!is.na(CD_PERCENT_DEMOCRAT)) %>% 
+  group_by(CD_PERCENT_DEMOCRAT > .5, county_mask_mandate) %>%
+  summarise(
+    ount = n()
+  )
+
+mask_mandates_R
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+rm(average_by_party, average_by_concern, filtered_df, average_by_contacts, average_by_masks, average_by_vaccine, filtered_df_D, filtered_df_R, average_by_CD_R, average_by_CD_D,mask_mandates,mask_mandates_R)
+```
+
