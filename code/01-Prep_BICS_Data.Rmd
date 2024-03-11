@@ -180,6 +180,14 @@ df <- df %>%
       TRUE ~ NA_integer_
     )
   )
+print(table(df$binary_concern_strong))
+#there are some subset of people that will reduce contact but actually don't want to
+#there are also some subet of people that won't reduce contact but actually want to
+df <- df %>%
+  mutate(binary_concern_strong = ifelse(covid19_reduceOK == "No, I would like to increase face-to-face interaction with others more than I am able to" & binary_concern_strong == 1, 0,
+                                        ifelse(covid19_reduceOK == "No, I would like to reduce face-to-face interaction with others more than I am able to" & binary_concern_strong == 0, 1, binary_concern_strong)))
+
+print(table(df$binary_concern_strong))
 ```
 manual merge = 27,937, already merged = 69,135
 ```{r}
@@ -530,14 +538,45 @@ bics_zip_features <- bics_zip_features %>%
 bics_zip_features$Income_Category <- as.factor(bics_zip_features$Income_Category)
 bics_zip_features$Income_Category <- factor(bics_zip_features$Income_Category, levels = c("Less than $30,000", "$30,000 to $59,999", "$60,000 to $89,999","$90,000 to $199,999","200,000 to $249,999", "Prefer not to answer"))
 ```
-setting sex to factor
+setting sex to factor, creating dummies for male, race-white, working
 ```{r}
 bics_zip_features$resp_sex <- as.factor(bics_zip_features$resp_sex)
 bics_zip_features$resp_sex <- factor(bics_zip_features$resp_sex, levels = c("Male","Female","Other"))
 
+#male
 bics_zip_features <- bics_zip_features %>% 
   mutate(male = case_when(
     resp_sex == "Male" ~ 1,
+    TRUE ~ 0
+  ))
+#white
+bics_zip_features <- bics_zip_features %>% 
+  mutate(white = case_when(
+    r_race == "White" ~ 1,
+    TRUE ~ 0
+  ))
+#hispanic
+bics_zip_features <- bics_zip_features %>% 
+  mutate(r_hispanic_num = case_when(
+    resp_hispanic == "Yes" ~ 1,
+    TRUE ~ 0
+  ))
+#working
+bics_zip_features <- bics_zip_features %>% 
+  mutate(r_working_num = case_when(
+    r_working == "Working" ~ 1,
+    TRUE ~ 0
+  ))
+#college
+bics_zip_features <- bics_zip_features %>% 
+  mutate(r_college_grad = case_when(
+    educ_group == "College graduate and above" ~ 1,
+    TRUE ~ 0
+  ))
+#urban
+bics_zip_features <- bics_zip_features %>% 
+  mutate(c_urban = case_when(
+    COUNT_RUCC_BINARY == "Urban" ~ 1,
     TRUE ~ 0
   ))
 ```
@@ -600,5 +639,9 @@ write_csv(bics_zip_features, "../data/BICS_ZIP_Features.csv")
 write_csv(RD_df, "../data/RD_BICS_ZIP_Features.csv")
 write_csv(D_df, "../data/D_BICS_ZIP_Features.csv")
 write_csv(R_df, "../data/R_BICS_ZIP_Features.csv")
+```
+
+```{r}
+rm(file_type, no_mandates,strict_mandates,less_strict_mandates, unclear_or_unspecified_mandates)
 ```
 
