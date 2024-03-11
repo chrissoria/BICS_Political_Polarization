@@ -6,6 +6,14 @@ library(deSolve)
 library(tidyverse)
 library(reshape2)
 
+# two group SIR model (A and B); each compartment is split into "Protected (P)" and "Unprotected (U)"
+# both groups can adopt protective behavior (i.e. mask usage) in two ways: 1) in response to deaths over a specified time window; 2) through contact with other "protected" individuals
+# protective behavior is protective of both transmission and infection
+# groups can differ in their rate of contact and their propensity to adopt protective behaviors
+# fraction of the population in each group can vary
+# homophily (degree to which members of a group mix within group versus outside their group) can vary
+
+
 sir_two_group_pu <- function(C = NA, C_a = 3, C_b = 3, 
                           trans_p = 0.05, rho=1/10, mu = 0.01, 
                           h_a=.5, kappa=0.03, phi = 0,
