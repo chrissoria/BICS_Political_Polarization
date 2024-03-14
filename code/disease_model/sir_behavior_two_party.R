@@ -253,7 +253,7 @@ lines((IUb+IPb)/N_b~time, data=sim, col="blue", type="l", ylab="Infected")
 
 # intial conditions
 N0 = 10000000 # population size
-frac_a = 0.5 # fraction in group A
+frac_a = 0.7 # fraction in group A
 N_a = frac_a*N0; N_b = N0 - N_a
 I0_a = 1 #intial infected in A
 I0_b = 1 # intial infected in B
