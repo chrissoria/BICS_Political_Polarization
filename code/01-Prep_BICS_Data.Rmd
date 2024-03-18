@@ -593,6 +593,11 @@ bics_zip_features <- bics_zip_features %>%
       political_view == "Extremely conservative" ~ 1,
       is.na(political_view) ~ NA_real_,
       TRUE ~ 0
+    ),
+    moderate = case_when(
+      political_view == "Moderate" ~ 1,
+      is.na(political_view) ~ NA_real_,
+      TRUE ~ 0
     )
   )
 

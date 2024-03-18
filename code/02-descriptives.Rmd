@@ -19,9 +19,9 @@ Overall Findings and questions:
 6. Does it still make sense to use the pooled weights when I'm subsetting for political party affiliation?
 
 
-
+Between Party Differences
 High level findings:
-- It probably doesn't need to be that we control for whether the respondent is working (type of employment might be more important)
+- It probably doesn't need to be that we control for whether the respondent is working when comparing republican versus democrat (type of employment might be more important)
 
 Detailed findings:
 - Democrats have slightly smaller household sizes (maybe not statistically significant)
