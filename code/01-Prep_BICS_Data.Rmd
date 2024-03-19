@@ -546,37 +546,74 @@ bics_zip_features$resp_sex <- factor(bics_zip_features$resp_sex, levels = c("Mal
 #male
 bics_zip_features <- bics_zip_features %>% 
   mutate(male = case_when(
+    is.na(resp_sex) ~ NA_real_,
     resp_sex == "Male" ~ 1,
     TRUE ~ 0
   ))
 #white
 bics_zip_features <- bics_zip_features %>% 
   mutate(white = case_when(
+    is.na(r_race) ~ NA_real_,
     r_race == "White" ~ 1,
     TRUE ~ 0
   ))
 #hispanic
 bics_zip_features <- bics_zip_features %>% 
   mutate(r_hispanic_num = case_when(
+    is.na(resp_hispanic) ~ NA_real_,
     resp_hispanic == "Yes" ~ 1,
     TRUE ~ 0
   ))
 #working
 bics_zip_features <- bics_zip_features %>% 
   mutate(r_working_num = case_when(
+    is.na(r_working) ~ NA_real_,
     r_working == "Working" ~ 1,
     TRUE ~ 0
   ))
 #college
 bics_zip_features <- bics_zip_features %>% 
   mutate(r_college_grad = case_when(
+    is.na(educ_group) ~ NA_real_,
     educ_group == "College graduate and above" ~ 1,
     TRUE ~ 0
   ))
 #urban
 bics_zip_features <- bics_zip_features %>% 
   mutate(c_urban = case_when(
+    is.na(COUNT_RUCC_BINARY) ~ NA_real_,
     COUNT_RUCC_BINARY == "Urban" ~ 1,
+    TRUE ~ 0
+  ))
+#over 65 or below
+bics_zip_features <- bics_zip_features %>%
+  mutate(young = case_when(
+    is.na(age) ~ NA_real_,  # Preserve NA values by explicitly handling them
+    age < 64 ~ 1,
+    TRUE ~ 0
+  ))
+
+#republican
+bics_zip_features <- bics_zip_features %>%
+  mutate(republican = case_when(
+    is.na(political_party) ~ NA_real_,  # Preserve NA values by explicitly handling them
+    political_party == "Republican" ~ 1,
+    TRUE ~ 0
+  ))
+
+#republican district
+bics_zip_features <- bics_zip_features %>%
+  mutate(republican_district = case_when(
+    is.na(CONGRESSPERSON_PARTY) ~ NA_real_,  # Preserve NA values by explicitly handling them
+    CONGRESSPERSON_PARTY == "Republican" ~ 1,
+    TRUE ~ 0
+  ))
+
+#democrat district
+bics_zip_features <- bics_zip_features %>%
+  mutate(democrat_district = case_when(
+    is.na(CONGRESSPERSON_PARTY) ~ NA_real_,  # Preserve NA values by explicitly handling them
+    CONGRESSPERSON_PARTY == "Democratic" ~ 1,
     TRUE ~ 0
   ))
 ```

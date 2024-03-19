@@ -8,14 +8,16 @@ output: html_document
 ```{r}
 library(tidyverse)
 library(dplyr)
+library(emmeans)
+library(MASS)
 ```
 Overall Findings and questions:
 1. Working is correlated with the dependent variables but not independent variables of interest (political party). Do we still control for this?
-2. Republicans within democratic districts look to be more likely to be employed than republicans in republican districts. The opposite is true for Democrats (probably a function of being in locations that are easier to get jobs in). Does it make sense to control for employment only in the models where I'm comparing same party identifcation in these different settings?
+2. Republicans within democratic districts look to be more likely to be employed than republicans in republican districts. The opposite is true for Democrats (probably a function of being in locations that are easier to get jobs in). Does it make sense to control for employment only in the models where I'm comparing same party identifcation in these different settings? EMPLOY ALL
 3. Some of these differences probably change through the pandemic, would it be worth to look at how these averages differ throughout the pandemic?
 4. Republicans in highly democratic congressional districts are less likely to be extremely conservative. Does this mean that it's important to control extreme conservative and extreme liberal in models where I'm trying to get at the difference between the two groups (those in opposing districts versus those in their own)?
 5. Compared to Republicans, Democrats are much less likely to live in an opposing party district. Could this be a result of how sample was collected?
-5. There shouldn't be differences in these outcomes by wave. For example, in wave 2 it should not be more or less likely that republicans versus democrats have smaller household sizes, etc. What are the implications on this? Does it even make sense to control for wave when we're conducting a pooled analysis (with the interpretation being something like, regardless of which wave of data this coming for, democrats are more likely to XYZ. But does including wave dilute any of the effects of interest?) 
+5. There shouldn't be differences in these outcomes by wave. For example, in wave 2 it should not be more or less likely that republicans versus democrats have smaller household sizes, etc. What are the implications on this? Does it even make sense to control for wave when we're conducting a pooled analysis (with the interpretation being something like, regardless of which wave of data this coming for, democrats are more likely to XYZ. But does including wave dilute any of the effects of interest?) YES CONTROL FOR HOUSEHOLD SIZE
 6. Does it still make sense to use the pooled weights when I'm subsetting for political party affiliation?
 
 
@@ -122,7 +124,7 @@ High level findings:
 
 Detailed findings:
 - (surprisingly) people who report above average non-household contacts are younger
-- (surprisingly) people who report above average non-household contacts are slightly more likely to be male
+- people who report above average non-household contacts are slightly more likely to be male
 - (surprisingly) people who report above average non-household contacts are slightly more likely to be college educated
 - people who report above average non-household contacts are more likely to be employed
 - people who report above average non-household contacts are more likely to be white
@@ -276,5 +278,116 @@ mask_mandates_R
 
 ```{r}
 rm(average_by_party, average_by_concern, filtered_df, average_by_contacts, average_by_masks, average_by_vaccine, filtered_df_D, filtered_df_R, average_by_CD_R, average_by_CD_D,mask_mandates,mask_mandates_R)
+```
+
+Next, I want to produce some simple bivariate results in order to show the magnitude of the effect
+```{r}
+bi_age <- lm(num_cc_nonhh ~ young, data = bics_zip_features, weights = weight_pooled)
+bi_party <- lm(num_cc_nonhh ~ republican, data = RD_df, weights = weight_pooled)
+bi_race <- lm(num_cc_nonhh ~ white, data = bics_zip_features, weights = weight_pooled)
+bi_gender <- lm(num_cc_nonhh ~ male, data = bics_zip_features, weights = weight_pooled)
+
+summary(bi_party)
+
+emm_race <- emmeans(bi_race, specs = pairwise ~ white)
+emm_gender <- emmeans(bi_gender, specs = pairwise ~ male)
+emm_age <- emmeans(bi_age, specs = pairwise ~ young)
+emm_party <- emmeans(bi_party, specs = pairwise ~ republican)
+
+contr_race <- contrast(emm_race, "pairwise")
+contr_gender <- contrast(emm_gender, "pairwise")
+contr_age <- contrast(emm_age, "pairwise")
+contr_party <- contrast(emm_party, "pairwise")
+
+# Convert emmeans summaries to data frames
+df_race_contrasts <- summary(contr_race) %>% as.data.frame()
+df_gender_contrasts <- summary(contr_gender) %>% as.data.frame()
+df_age_contrasts <- summary(contr_age) %>% as.data.frame()
+df_party_contrasts <- summary(contr_party) %>% as.data.frame()
+
+# Correct: Assign 'variable' column directly to emm_* data frames
+emm_race$variable <- "white"
+emm_gender$variable <- "male"
+emm_age$variable <- "65+"
+emm_party$variable <- "republican"
+
+# Combine all emm_* data frames into one
+combined_contrasts <- bind_rows(df_age_contrasts, df_party_contrasts, df_race_contrasts, df_gender_contrasts)
+combined_contrasts <- as.data.frame(combined_contrasts)
+
+combined_contrasts$contrast <- factor(combined_contrasts$contrast, levels = unique(combined_contrasts$contrast))
+
+
+pred_race <- ggplot(combined_contrasts, aes(x = contrast, y = -1 * estimate, fill = contrast)) +
+  geom_bar(stat = "identity", position = position_dodge(), width = 0.7) +  # Draw bars
+  geom_errorbar(aes(ymin = -1 * (estimate + SE), ymax = -1 * (estimate - SE)), 
+                position = position_dodge(0.7), width = 0.25) +  # Add error bars
+  labs(x = "Contrast", y = "Estimated Difference in Contacts", title = "Difference in Predicted Contacts Between Groups") +
+  scale_x_discrete(labels = c("Young", "Republican", "White", "Male")) +
+  scale_fill_manual(values = c("young0 - young1" = "gray", "republican0 - republican1" = "red", 
+                               "white0 - white1" = "gray", "male0 - male1" = "gray")) +
+  theme_minimal() +
+  theme(legend.position = "none")  # Remove legend if unnecessary
+
+ggsave("contrast_contacts.png", plot = pred_race, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots", width = 12, height = 8, units = "in")
+
+pred_race
+
+rm(emm_race, emm_gender, emm_age, emm_party, combined_contrasts, pred_race, df_race_contrasts, df_gender_contrasts, df_age_contrasts, df_party_contrasts, contr_age, contr_gender, contr_party, contr_race, bi_age, bi_gender, bi_party, bi_race)
+```
+
+```{r}
+bi_age <- lm(Norm_Masks_Used ~ young, data = bics_zip_features, weights = weight_pooled)
+bi_party <- lm(Norm_Masks_Used ~ republican, data = RD_df, weights = weight_pooled)
+bi_race <- lm(Norm_Masks_Used ~ white, data = bics_zip_features, weights = weight_pooled)
+bi_gender <- lm(Norm_Masks_Used ~ male, data = bics_zip_features, weights = weight_pooled)
+
+summary(bi_party)
+
+emm_race <- emmeans(bi_race, specs = pairwise ~ white)
+emm_gender <- emmeans(bi_gender, specs = pairwise ~ male)
+emm_age <- emmeans(bi_age, specs = pairwise ~ young)
+emm_party <- emmeans(bi_party, specs = pairwise ~ republican)
+
+contr_race <- contrast(emm_race, "pairwise")
+contr_gender <- contrast(emm_gender, "pairwise")
+contr_age <- contrast(emm_age, "pairwise")
+contr_party <- contrast(emm_party, "pairwise")
+
+# Convert emmeans summaries to data frames
+df_race_contrasts <- summary(contr_race) %>% as.data.frame()
+df_gender_contrasts <- summary(contr_gender) %>% as.data.frame()
+df_age_contrasts <- summary(contr_age) %>% as.data.frame()
+df_party_contrasts <- summary(contr_party) %>% as.data.frame()
+
+# Correct: Assign 'variable' column directly to emm_* data frames
+emm_race$variable <- "white"
+emm_gender$variable <- "male"
+emm_age$variable <- "65+"
+emm_party$variable <- "republican"
+
+# Combine all emm_* data frames into one
+combined_contrasts <- bind_rows(df_age_contrasts, df_party_contrasts, df_race_contrasts, df_gender_contrasts)
+combined_contrasts <- as.data.frame(combined_contrasts)
+
+combined_contrasts$contrast <- factor(combined_contrasts$contrast, levels = unique(combined_contrasts$contrast))
+
+
+pred_race <- ggplot(combined_contrasts, aes(x = contrast, y = -1 * estimate, fill = contrast)) +
+  geom_bar(stat = "identity", position = position_dodge(), width = 0.7) +  # Draw bars
+  geom_errorbar(aes(ymin = -1 * (estimate + SE), ymax = -1 * (estimate - SE)), 
+                position = position_dodge(0.7), width = 0.25) +  # Add error bars
+  labs(x = "Contrast", y = "Estimated Difference in Contacts", title = "Difference in Predicted Mask Usage Between Groups") +
+  scale_x_discrete(labels = c("Young", "Republican", "White", "Male")) +
+  scale_fill_manual(values = c("young0 - young1" = "gray", "republican0 - republican1" = "red", 
+                               "white0 - white1" = "gray", "male0 - male1" = "gray")) +
+  theme_minimal() +
+  theme(legend.position = "none")  # Remove legend if unnecessary
+
+ggsave("contrast_masks.png", plot = pred_race, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots", width = 12, height = 8, units = "in")
+
+pred_race
+
+rm(emm_race, emm_gender, emm_age, emm_party, combined_contrasts, pred_race, df_race_contrasts, df_gender_contrasts, df_age_contrasts, df_party_contrasts, contr_age, contr_gender, contr_party, contr_race, bi_age, bi_gender, bi_party, bi_race)
 ```
 
