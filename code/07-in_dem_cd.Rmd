@@ -413,6 +413,16 @@ legend("topright",
        lty = 1, lwd = 2)
 dev.off()
 ```
+Before I move on, I'm interested in seeing whether there might be a non-linear relationship? No, percent democrats in the district does not move the needle on how republicans react. 
+
+```{r}
+rep_in_rep_contact_model <- glm.nb(num_cc_nonhh ~  log_rate_prev_12_01_20 + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race  + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + Categorical_Dem_CD_County_Share, 
+                                   data = R_df,
+                                   weights = weight_pooled)
+
+print(summary(rep_in_rep_contact_model))
+```
+
 
 Mask usage
 Step 1.
@@ -537,6 +547,33 @@ legend("topright",
 
 dev.off()
 ```
+Again, let's see if the relationship is non-linear. Looks pretty linear. 
+
+However, when I add the weights, things looks pretty different. 
+Let's plot this. 
+```{r}
+national_R <- national_df %>% 
+  filter(political_party == "Republican")
+
+national_D <- national_df %>% 
+  filter(political_party == "Democrat")
+
+rep_in_rep_mask_model <- lm(Norm_Masks_Used ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + county_mask_mandate + educ_group + resp_yob + r_working + resp_hhsize + r_race + extreme_conservative + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + CD_PERCENT_DEMOCRAT, 
+                                   data = R_df,
+                            weights = weight_pooled)
+
+summary(rep_in_rep_mask_model)
+
+dem_in_rep_mask_model <- lm(Norm_Masks_Used ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + male + county_mask_mandate + educ_group + resp_yob + r_working + resp_hhsize + r_race + extreme_liberal + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + CD_PERCENT_REPUBLICAN, 
+                            data = D_df,
+                            weights = weight_pooled)
+
+summary(dem_in_rep_mask_model)
+
+rm(national_R, national_D)
+```
+
+
 
 Vaccination
 Step 1. no controls

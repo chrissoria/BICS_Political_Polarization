@@ -86,8 +86,14 @@ rm(cd_concern_model, cd_concern_plot)
 How do partisans change their behavior depending on congressional district context?
 This difference becomes a little 
 ```{r}
-cd_contact_model <- glm.nb(num_cc_nonhh ~  log_rate_prev_12_01_20 + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + political_party_to_CD + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave, 
-                           data = bics_zip_features,
+filtered_df <- bics_zip_features %>% 
+  filter(!is.na(political_party) & !is.na(CONGRESSPERSON_PARTY) & political_party != "Prefer not to answer")
+
+print(table(filtered_df$political_party_to_CD))
+print(table(filtered_df$politcal_party))
+
+cd_contact_model <- glm.nb(num_cc_nonhh ~ log_rate_prev_12_01_20 + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + extreme_liberal + cityNY +`cityBay Area` + cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + political_party_to_CD, 
+                           data = filtered_df,
                            weights = weight_pooled)
 
 print(summary(cd_contact_model))
@@ -117,11 +123,11 @@ ggsave("cd_contact_pooled.png", plot = cd_contact_plot, path = "/Users/chrissori
 
 cd_contact_plot
 
-rm(cd_contact_model, cd_contact_plot)
+rm(cd_contact_model, cd_contact_plot, filtered_df)
 ```
 What about mask usage?
 ```{r}
-cd_masked_contact_model <- lm(Norm_Masks_Used ~  log_rate_prev_12_01_20 + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + political_party_to_CD + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave, 
+cd_masked_contact_model <- lm(Norm_Masks_Used ~  log_rate_prev_12_01_20 + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + extreme_liberal + cityNY +`cityBay Area` + cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + political_party_to_CD, 
                               data = bics_zip_features,
                               weights = weight_pooled)
 

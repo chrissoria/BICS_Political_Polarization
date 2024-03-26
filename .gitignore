@@ -10,4 +10,8 @@ plots/.DS_Store
 /model_tests
 /.ipynb_checkpoints
 .DS_Store
+<<<<<<< Updated upstream
 .DS_Store
+=======
+code/.DS_Store
+>>>>>>> Stashed changes

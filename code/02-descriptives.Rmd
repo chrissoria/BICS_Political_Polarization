@@ -10,6 +10,7 @@ library(tidyverse)
 library(dplyr)
 library(emmeans)
 library(MASS)
+library(emmeans)
 ```
 Overall Findings and questions:
 1. Working is correlated with the dependent variables but not independent variables of interest (political party). Do we still control for this?
@@ -43,18 +44,41 @@ filtered_df <- bics_zip_features %>%
 average_by_party <- filtered_df %>%
   group_by(political_party) %>%
   summarise(
-    average_age = mean(age, na.rm = TRUE),
-    average_male = mean(male, na.rm = TRUE),
-    average_college = mean(r_college_grad, na.rm = TRUE),
-    average_employed = mean(r_working_num, na.rm = TRUE),
-    average_white = mean(white, na.rm = TRUE),
-    average_hispanic = mean(r_hispanic_num, na.rm = TRUE),
-    average_household_size = mean(resp_hhsize, na.rm = TRUE),
-    average_urban = mean(COUNTY_RUCC_2013, na.rm = TRUE)
+    average_age = weighted.mean(age, w = weight_pooled, na.rm = TRUE),
+    average_male = weighted.mean(male, w = weight_pooled, na.rm = TRUE),
+    average_college = weighted.mean(r_college_grad, w = weight_pooled, na.rm = TRUE),
+    average_employed = weighted.mean(r_working_num, w = weight_pooled, na.rm = TRUE),
+    average_white = weighted.mean(white, w = weight_pooled, na.rm = TRUE),
+    average_hispanic = weighted.mean(r_hispanic_num, w = weight_pooled, na.rm = TRUE),
+    average_household_size = weighted.mean(resp_hhsize, w = weight_pooled, na.rm = TRUE),
+    average_urban = weighted.mean(COUNTY_RUCC_2013, w = weight_pooled, na.rm = TRUE)
   )
 
 average_by_party
 ```
+Do average contact and mask usage rates differ much over time?
+
+```{r}
+filtered_df <- bics_zip_features %>% 
+  filter(political_party != "Prefer not to answer") %>% 
+  filter(!is.na(political_party))
+
+average_by_party_wave <- filtered_df %>%
+  group_by(political_party, wave) %>%
+  summarise(
+    contacts = weighted.mean(num_cc_nonhh, w = weight_pooled, na.rm = TRUE),
+    mask_usage = weighted.mean(Norm_Masks_Used, w = weight_pooled, na.rm = TRUE),
+    concern = weighted.mean(binary_concern_strong, w = weight_pooled, na.rm = TRUE)
+  )
+
+average_by_party_wave
+
+average_by_party_wave <- as.data.frame(average_by_party_wave)
+
+rm(average_by_party_wave)
+```
+
+
 What about concern about the virus?
 
 High level findings:
@@ -206,6 +230,31 @@ average_by_CD_D <- filtered_df_D %>%
 
 average_by_CD_D
 ```
+The democratic findings might just be due to the way the sample was collected
+Let's check the national samples to see if it holds
+```{r}
+filtered_df_D <- national_df %>% 
+  filter(!is.na(CD_PERCENT_REPUBLICAN) & political_party == "Democrat")
+
+average_by_CD_D <- filtered_df_D %>%
+  group_by(CD_PERCENT_REPUBLICAN > .5) %>%
+  summarise(
+    count = n()/nrow(filtered_df_D),
+    average_age = mean(age, w = weight_pooled, na.rm = TRUE),
+    average_male = mean(male, w = weight_pooled, na.rm = TRUE),
+    average_college = mean(r_college_grad, w = weight_pooled, na.rm = TRUE),
+    average_employed = mean(r_working_num, w = weight_pooled, na.rm = TRUE),
+    average_white = mean(white, w = weight_pooled, na.rm = TRUE),
+    average_hispanic = mean(r_hispanic_num, w = weight_pooled, na.rm = TRUE),
+    average_household_size = mean(resp_hhsize, w = weight_pooled, na.rm = TRUE),
+    average_urban = mean(COUNTY_RUCC_2013, w = weight_pooled, na.rm = TRUE),
+    average_extremism = mean(extreme_liberal, w = weight_pooled, na.rm = TRUE)
+  )
+
+average_by_CD_D
+```
+
+
 And, what about republicans in democratic districts?
 High level findings:
 - Republicans in highly democratic areas resemble democrats. They're younger, they're more likely to have a college education, they're less white, more Hispanic, and more likely to live in a dense urban area. However, they're also likely to have a higher household size, more likely to be employed, more likely to be male. Republicans in highly democratic CD's are also less likely to be extreme conservatives. There's also a good amount of republicans in both categories. 
@@ -217,21 +266,42 @@ filtered_df_R <- R_df %>%
 average_by_CD_R <- filtered_df_R %>%
   group_by(CD_PERCENT_DEMOCRAT > .5) %>%
   summarise(
-    count = n(),
-    average_age = mean(age, na.rm = TRUE),
-    average_male = mean(male, na.rm = TRUE),
-    average_college = mean(r_college_grad, na.rm = TRUE),
-    average_employed = mean(r_working_num, na.rm = TRUE),
+    count = n()/nrow(filtered_df_R),
+    average_age = mean(age, w = weight_pooled, na.rm = TRUE),
+    average_male = mean(male, w = weight_pooled, na.rm = TRUE),
+    average_college = mean(r_college_grad, w = weight_pooled, na.rm = TRUE),
+    average_employed = mean(r_working_num, w = weight_pooled, na.rm = TRUE),
     average_white = mean(white, na.rm = TRUE),
-    average_hispanic = mean(r_hispanic_num, na.rm = TRUE),
-    average_household_size = mean(resp_hhsize, na.rm = TRUE),
-    average_urban = mean(COUNTY_RUCC_2013, na.rm = TRUE),
-    average_extremism = mean(extreme_conservative, na.rm = TRUE)
+    average_hispanic = mean(r_hispanic_num, w = weight_pooled, na.rm = TRUE),
+    average_household_size = mean(resp_hhsize, w = weight_pooled, na.rm = TRUE),
+    average_urban = mean(COUNTY_RUCC_2013, w = weight_pooled, na.rm = TRUE),
+    average_extremism = mean(extreme_conservative, w = weight_pooled, na.rm = TRUE)
   )
 
 average_by_CD_R
 ```
+Let's also look at the national sample instead
+```{r}
+filtered_df_R <- national_df %>% 
+  filter(!is.na(CD_PERCENT_DEMOCRAT) & political_party == "Republican")
 
+average_by_CD_R <- filtered_df_R %>%
+  group_by(CD_PERCENT_DEMOCRAT > .5) %>%
+  summarise(
+    count = n()/nrow(filtered_df_R),
+    average_age = mean(age, w = weight_pooled, na.rm = TRUE),
+    average_male = mean(male, w = weight_pooled, na.rm = TRUE),
+    average_college = mean(r_college_grad, w = weight_pooled, na.rm = TRUE),
+    average_employed = mean(r_working_num, w = weight_pooled, na.rm = TRUE),
+    average_white = mean(white, w = weight_pooled, na.rm = TRUE),
+    average_hispanic = mean(r_hispanic_num, w = weight_pooled, na.rm = TRUE),
+    average_household_size = mean(resp_hhsize, w = weight_pooled, na.rm = TRUE),
+    average_urban = mean(COUNTY_RUCC_2013, w = weight_pooled, na.rm = TRUE),
+    average_extremism = mean(extreme_conservative, w = weight_pooled, na.rm = TRUE)
+  )
+
+average_by_CD_R
+```
 Lastly, I want to control for county mask mandates in order to understand whether, for example, republicans in democratic districts aren't just limited their interactions and wearing more masks because of masks. However, are there any democratic counties without mask mandates? Are there any republicans in democratic counties that don't have mask mandates?
 
 High level findings:
@@ -322,14 +392,14 @@ pred_race <- ggplot(combined_contrasts, aes(x = contrast, y = -1 * estimate, fil
   geom_bar(stat = "identity", position = position_dodge(), width = 0.7) +  # Draw bars
   geom_errorbar(aes(ymin = -1 * (estimate + SE), ymax = -1 * (estimate - SE)), 
                 position = position_dodge(0.7), width = 0.25) +  # Add error bars
-  labs(x = "Contrast", y = "Estimated Difference in Contacts", title = "Difference in Predicted Contacts Between Groups") +
-  scale_x_discrete(labels = c("Young", "Republican", "White", "Male")) +
+  labs(x = "Contrast", y = "Estimated Gap in Non-Household Contacts", title = "Difference in Predicted Contacts Between Groups") +
+  scale_x_discrete(labels = c("Young - Old", "Republican - Democrat", "White - Non-White", "Male - Non-Male")) +
   scale_fill_manual(values = c("young0 - young1" = "gray", "republican0 - republican1" = "red", 
                                "white0 - white1" = "gray", "male0 - male1" = "gray")) +
   theme_minimal() +
   theme(legend.position = "none")  # Remove legend if unnecessary
 
-ggsave("contrast_contacts.png", plot = pred_race, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots", width = 12, height = 8, units = "in")
+ggsave("contrast_contacts.png", plot = pred_race, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Contacts", width = 12, height = 8, units = "in")
 
 pred_race
 
@@ -377,17 +447,122 @@ pred_race <- ggplot(combined_contrasts, aes(x = contrast, y = -1 * estimate, fil
   geom_bar(stat = "identity", position = position_dodge(), width = 0.7) +  # Draw bars
   geom_errorbar(aes(ymin = -1 * (estimate + SE), ymax = -1 * (estimate - SE)), 
                 position = position_dodge(0.7), width = 0.25) +  # Add error bars
-  labs(x = "Contrast", y = "Estimated Difference in Contacts", title = "Difference in Predicted Mask Usage Between Groups") +
-  scale_x_discrete(labels = c("Young", "Republican", "White", "Male")) +
+  labs(x = "Contrast", y = "Estimated Gap in Mask Usage", title = "Difference in Predicted Mask Usage Between Groups") +
+  scale_x_discrete(labels = c("Young - Old", "Republican - Democrat", "White - Non-White", "Male - Non-Male")) +
   scale_fill_manual(values = c("young0 - young1" = "gray", "republican0 - republican1" = "red", 
                                "white0 - white1" = "gray", "male0 - male1" = "gray")) +
   theme_minimal() +
   theme(legend.position = "none")  # Remove legend if unnecessary
 
-ggsave("contrast_masks.png", plot = pred_race, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots", width = 12, height = 8, units = "in")
+ggsave("contrast_masks.png", plot = pred_race, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Masks", width = 12, height = 8, units = "in")
 
 pred_race
 
 rm(emm_race, emm_gender, emm_age, emm_party, combined_contrasts, pred_race, df_race_contrasts, df_gender_contrasts, df_age_contrasts, df_party_contrasts, contr_age, contr_gender, contr_party, contr_race, bi_age, bi_gender, bi_party, bi_race)
+```
+Lastly, let's do vaccination
+```{r}
+bi_age <- lm(Vaccinated ~ young, data = bics_zip_features, weights = weight_pooled)
+bi_party <- lm(Vaccinated ~ republican, data = RD_df, weights = weight_pooled)
+bi_race <- lm(Vaccinated ~ white, data = bics_zip_features, weights = weight_pooled)
+bi_gender <- lm(Vaccinated ~ male, data = bics_zip_features, weights = weight_pooled)
+
+summary(bi_party)
+
+emm_race <- emmeans(bi_race, specs = pairwise ~ white)
+emm_gender <- emmeans(bi_gender, specs = pairwise ~ male)
+emm_age <- emmeans(bi_age, specs = pairwise ~ young)
+emm_party <- emmeans(bi_party, specs = pairwise ~ republican)
+
+contr_race <- contrast(emm_race, "pairwise")
+contr_gender <- contrast(emm_gender, "pairwise")
+contr_age <- contrast(emm_age, "pairwise")
+contr_party <- contrast(emm_party, "pairwise")
+
+# Convert emmeans summaries to data frames
+df_race_contrasts <- summary(contr_race) %>% as.data.frame()
+df_gender_contrasts <- summary(contr_gender) %>% as.data.frame()
+df_age_contrasts <- summary(contr_age) %>% as.data.frame()
+df_party_contrasts <- summary(contr_party) %>% as.data.frame()
+
+# Correct: Assign 'variable' column directly to emm_* data frames
+emm_race$variable <- "white"
+emm_gender$variable <- "male"
+emm_age$variable <- "65+"
+emm_party$variable <- "republican"
+
+# Combine all emm_* data frames into one
+combined_contrasts <- bind_rows(df_age_contrasts, df_party_contrasts, df_race_contrasts, df_gender_contrasts)
+combined_contrasts <- as.data.frame(combined_contrasts)
+
+combined_contrasts$contrast <- factor(combined_contrasts$contrast, levels = unique(combined_contrasts$contrast))
+
+
+pred_race <- ggplot(combined_contrasts, aes(x = contrast, y = -1 * estimate, fill = contrast)) +
+  geom_bar(stat = "identity", position = position_dodge(), width = 0.7) + 
+  geom_errorbar(aes(ymin = -1 * (estimate + SE), ymax = -1 * (estimate - SE)), 
+                position = position_dodge(0.7), width = 0.25) + 
+  labs(x = "Contrast", y = "Estimated Gap in Vaccination Rates", title = "Difference in Predicted Vaccination Between Groups") +
+  scale_x_discrete(labels = c("Young - Old", "Republican - Democrat", "White - Non-White", "Male - Non-Male")) +
+  scale_fill_manual(values = c("young0 - young1" = "gray", "republican0 - republican1" = "red", 
+                               "white0 - white1" = "gray", "male0 - male1" = "gray")) +
+  theme_minimal() +
+  theme(legend.position = "none") 
+
+ggsave("contrast_vaccines.png", plot = pred_race, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Vaccines", width = 12, height = 8, units = "in")
+
+pred_race
+
+rm(emm_race, emm_gender, emm_age, emm_party, combined_contrasts, pred_race, df_race_contrasts, df_gender_contrasts, df_age_contrasts, df_party_contrasts, contr_age, contr_gender, contr_party, contr_race, bi_age, bi_gender, bi_party, bi_race)
+```
+
+```{r}
+contact_reduction_R_v_D_w2 <- lm(num_cc_nonhh ~  log_rate_prev_6_14_20 + political_party, data = subset(bics_zip_features, wave == 2))
+
+# Model for Wave 3 (September 12-20, '20)
+contact_reduction_R_v_D_w3 <- lm(num_cc_nonhh ~ log_rate_prev_9_9_20 + political_party, data = subset(bics_zip_features, wave == 3))
+
+# Model for Wave 4 (December 1-7, '20)
+contact_reduction_R_v_D_w4 <- lm(num_cc_nonhh ~  log_rate_prev_12_01_20 + political_party, data = subset(bics_zip_features, wave == 4))
+
+# Model for Wave 5 (February 9-14, '21)
+contact_reduction_R_v_D_w5 <- lm(num_cc_nonhh ~ log_rate_prev_2_4_21 + political_party, data = subset(bics_zip_features, wave == 5))
+
+# Model for Wave 6 (May 14-25, '21)
+contact_reduction_R_v_D_w6 <- lm(num_cc_nonhh ~  log_rate_prev_5_12_21 + political_party, data = subset(bics_zip_features, wave == 6))
+
+emm_w2 <- emmeans(contact_reduction_R_v_D_w2, specs = "political_party")
+emm_w3 <- emmeans(contact_reduction_R_v_D_w3, specs = "political_party")
+emm_w4 <- emmeans(contact_reduction_R_v_D_w4, specs = "political_party")
+emm_w5 <- emmeans(contact_reduction_R_v_D_w5, specs = "political_party")
+emm_w6 <- emmeans(contact_reduction_R_v_D_w6, specs = "political_party")
+
+all_emms <- rbind(
+  transform(summary(emm_w2), wave = "June 18-24, '20"),
+  transform(summary(emm_w3), wave = "September 12-20, '20"),
+  transform(summary(emm_w4), wave = "December 1-7, '20"),
+  transform(summary(emm_w5), wave = "February 9-14, '21"),
+  transform(summary(emm_w6), wave = "May 14-25, '21")
+)
+
+rm(emm_w2, emm_w3, emm_w4, emm_w5, emm_w6)
+rm(contact_reduction_R_v_D_w2,contact_reduction_R_v_D_w3,contact_reduction_R_v_D_w4,contact_reduction_R_v_D_w5,contact_reduction_R_v_D_w6)
+
+all_emms <- all_emms %>% 
+  filter(political_party != "Prefer not to answer")
+
+all_emms$wave <- factor(all_emms$wave, levels = cases_df$wave)
+
+contact_reduction_rvd_waves <- ggplot(all_emms, aes(x = wave, y = emmean, color = political_party, shape = political_party)) +
+  geom_point(position = position_dodge(width = 0.35), size = 3) +
+  labs(y = "Predicted Reported Contacts", x = "", color = "Political Party") +
+  geom_errorbar(aes(ymin = emmean - SE, ymax = emmean + SE), width = 0.2,position = position_dodge(width = 0.35)) +
+  scale_color_manual(name = "emmean", 
+                     values = c("blue", "red", "darkgreen")) +
+  theme_minimal()
+
+contact_reduction_rvd_waves
+
+rm(all_emms,contact_reduction_rvd_waves)
 ```
 

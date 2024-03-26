@@ -266,10 +266,11 @@ mu = 0.01 # probability of dying following infection
 kappa = 0.3 # reducting in transmission and infection due to protective behavior
 phi = 0 # waning rate of protective behavior
 
+
 time = 365 # time steps for simulation
-theta_a = 100 # responsiveness to deaths for adopting protective behavior in group A
+theta_a = 80 # responsiveness to deaths for adopting protective behavior in group A
 theta_b = 100 # responsiveness to deaths for adopting protective behavior in group B 
-omega_a = 0.02 # group A's rate of adopting protective behavior based on contact with protected individuals 
+omega_a = 0.01 # group A's rate of adopting protective behavior based on contact with protected individuals 
 omega_b = 0.02 # group B's rate of adopting protective behavior based on contact with protected individuals 
 
 h_a = c(.5, .99) # measure of homiphily in group A
@@ -298,6 +299,15 @@ expand.grid(h_a=h_a, epsilon=epsilon)  %>%
                                     " "))) -> df
 
 line_sz<-.8
+
+
+ggplot(df %>% filter(epsilon == 0.99)) +
+  geom_line(aes(x=time, y=(IUa+IPa)/N_a), size=line_sz, color="red") + 
+  geom_line(aes(x=time, y=(IUb+IPb)/N_b), size=line_sz, color="blue") + 
+  facet_grid(~h_a) +
+  ylab("Infections")+
+  theme_minimal()
+  
 
 ggplot(df) +
   geom_line(aes(x=time, y=(IUa+IPa)/N_a), size=line_sz, color="red") + 

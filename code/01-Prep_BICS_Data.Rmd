@@ -271,7 +271,7 @@ columns_to_keep <- c('ResponseId','StartDate','resp_yob','resp_sex','resp_hispan
                      'industry','health_insurance','interview_date','wave','agecat','city','covid19_vax','covid19_whynot_vax',
                      'Non_Weighted_Safety_Index','Weighted_Safety_Index','Norm_Masks_Used','educ_group','contact_reduction',
                      'binary_concern','binary_concern_strong','resp_educ','Contacts',
-                     'data_collected_dates','weight_pooled')
+                     'data_collected_dates','weight_pooled','weight_city')
 
 df <- df[columns_to_keep]
 
@@ -675,12 +675,25 @@ I_df <- subset(bics_zip_features, political_party == "Independent")
 
 D_df <- subset(D_df, !is.na(D_df$Categorical_Repub_CD_County_Share))
 R_df <- subset(R_df, !is.na(R_df$Categorical_Dem_CD_County_Share))
+
+national_df <- subset(bics_zip_features, city == "National")
 ```
 ```{r}
 write_csv(bics_zip_features, "../data/BICS_ZIP_Features.csv")
 write_csv(RD_df, "../data/RD_BICS_ZIP_Features.csv")
 write_csv(D_df, "../data/D_BICS_ZIP_Features.csv")
 write_csv(R_df, "../data/R_BICS_ZIP_Features.csv")
+```
+building the df for weekly case counts
+```{r}
+dates <- c("June 18-24, '20", "September 12-20, '20", "December 1-7, '20", "February 9-14, '21", "May 14-25, '21")
+weekly_cases <- c(693,772,2351,2192,545)
+
+cases_df <- data.frame(wave = dates, weekly_cases = weekly_cases)
+
+cases_df$wave <- factor(cases_df$wave, levels = cases_df$wave)
+
+rm(dates,weekly_cases)
 ```
 
 ```{r}
