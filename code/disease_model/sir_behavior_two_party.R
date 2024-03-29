@@ -74,24 +74,24 @@ sir_two_group_pu <- function(c = NA, c_a = 3, c_b = 3,
   N_a = N0_a
   N_b = N0_b
   
-  print(c(C_aa, C_ba, C_ab, C_bb))
-  print(c(c_aa, c_ba, c_ab, c_bb))
-  
-  
-  params<-c("trans_p" = trans_p, 
-            "h_a"= h_a, 
-            "c_a" = c_a, "c_b" = c_b,
-            "c_aa" = c_aa, "c_ab" = c_ab,
-            "c_ba" = c_ba, "c_bb" = c_bb,
-            "kappa" = kappa,
-            "phi"=phi, 
-            "rho"=rho, 
-            "mu"=mu, "time"=time, 
-            "I0_a"=I0_a, "I0_b"=I0_b, 
-            "N0_a" = N0_a, "N0_b"= N0_b,
-            "ell"=ell,
-            "epsilon_a"=epsilon_a, "epsilon_b"=epsilon_b,
-            "theta_a"=theta_a, "theta_b"=theta_b) 
+
+ 
+  params<-c("trans_p" = trans_p, # probability of transmission given contact
+            "h_a"= h_a, # # proportion of group A's total contact with members of their own group (bounded by population size and total contacts in group B)
+            "c_a" = c_a, "c_b" = c_b, # average number of contacts per day 
+            "c_aa" = c_aa, "c_ab" = c_ab, # average number of contacts per day 
+            "c_ba" = c_ba, "c_bb" = c_bb, # average number of contacts per day 
+            "kappa" = kappa, # reduction in probability of transmission given contact resulting from protective behavior (masking, distancing)
+            "phi"=phi, # waning rate of protective behavior
+            "rho"=rho, # 1 / infectious period
+            "mu"=mu, # probability of dying following infection
+            "time"=time, # time steps in simulation
+            "I0_a"=I0_a, "I0_b"=I0_b, # starting number infected in each group
+            "N0_a" = N0_a, "N0_b"= N0_b, # population size in each group
+            "ell"=ell, # time window for considering deaths that influence adoption of protective behavior
+            "epsilon_a"=epsilon_a, "epsilon_b"=epsilon_b, #measure of assortativeness in influence (i.e. are people equally aware and influenced by deaths/number of protected individuals in their own group versus in the out group)
+            "theta_a"=theta_a, "theta_b"=theta_b, # responsiveness to deaths for adopting protective behavior 
+            "omega_a"=omega_a, "omega_b"=omega_b) # responsiveness to proportion of protected individuals for adopting protective behavior
   
   state<-c( 
     
@@ -237,14 +237,14 @@ sir_two_group_pu <- function(c = NA, c_a = 3, c_b = 3,
 #### test run ####
 #Average daily total contacts in BICS: Democrats = 5.618922; Republicans = 7.188501
 
-N0 = 10000000; frac_a = 0.8; h_a = 0.99
+N0 = 10000000; frac_a = 0.5; h_a = 0.5
 N_a = frac_a*N0; N_b = N0 - N_a
 
 ls<-sir_two_group_pu(c = NA, c_a = 7.1, c_b = 5.6, 
                      trans_p = 0.05, rho=1/10, mu = 0.01, 
                      h_a=h_a, kappa=0.3, phi = 0.02,
                      I0_a=1, I0_b=1, N0 = N0, frac_a = frac_a, time = 200,
-                     theta_a = 80, theta_b = 100, epsilon = 0.5,
+                     theta_a = 100, theta_b = 200, epsilon = 0.5,
                      omega_a = 0.1, omega_b = 0.2,
                      get_params=TRUE)
 sim<-ls$sim
@@ -287,10 +287,10 @@ phi = 0 # waning rate of protective behavior
 
 
 time = 365 # time steps for simulation
-theta_a = 80 # responsiveness to deaths for adopting protective behavior in group A
-theta_b = 100 # responsiveness to deaths for adopting protective behavior in group B 
-omega_a = 80 # responsiveness to proportion of protected individuals for adopting protective behavior in group A
-omega_b = 100 # responsiveness to proportion of protected individuals for adopting protective behavior in group A
+theta_a = 100 # responsiveness to deaths for adopting protective behavior in group A
+theta_b = 200 # responsiveness to deaths for adopting protective behavior in group B 
+omega_a = 0.1 # responsiveness to proportion of protected individuals for adopting protective behavior in group A
+omega_b = 0.2 # responsiveness to proportion of protected individuals for adopting protective behavior in group A
 
 h_a = c(.5, .99) # proportion of group A's total contact with members of their own group (bounded by population size and total contacts in group B)
 epsilon = c(.5, .99) #measure of assortativeness in influence (i.e. are people equally aware and influenced by deaths/number of protected individuals in their own group versus in the out group)
@@ -298,7 +298,7 @@ epsilon = c(.5, .99) #measure of assortativeness in influence (i.e. are people e
 
 expand.grid(h_a=h_a, epsilon=epsilon)  %>%
   data.frame() %>%
-  apply(1, function(par) sir_two_group_pu(C = NA, C_a = C_a, C_b = C_b, 
+  apply(1, function(par) sir_two_group_pu(c = NA, c_a = c_a, c_b = c_b, 
                                           trans_p = trans_p, rho=rho, mu = mu, 
                                           h_a=par[["h_a"]],
                                           kappa=kappa, phi = phi,
