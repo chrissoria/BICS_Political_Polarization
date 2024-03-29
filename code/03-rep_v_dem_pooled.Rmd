@@ -51,31 +51,33 @@ rm(rvd_contact_reduction_model,rvd_contact_reduction_plot)
 ```
 Next, I want to find out who was more concerned about the spread of the virus throughout the pandemic
 ```{r}
-rvd_concern_model <- lm(binary_concern_strong ~  `rate_prev_12/1/20` + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + resp_hhsize + r_race + political_party + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave, 
+rvd_concern_model <- lm(binary_concern_strong ~  log_rate_prev_12_01_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + resp_hhsize + r_race + political_party + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave, 
                                    data = bics_zip_features, 
                                    weights = weight_pooled)
 
 
-rvd_concern_plot <- plot_model(
-  rvd_concern_model,
-  colors = "black",
-  type = "pred",
-  auto.label = FALSE,
-  terms = c("political_party[Democrat, Republican, Independent]"),
-  title = "Partisan Differences in Concern about Spread of the Virus \nThroughout the Pandemic",
-  axis.title = c("", "Predicted Probability of Concern of Spread")
-) +
-theme_minimal() +
-  theme(
-    legend.position = "none",
-    axis.text.y = element_text(size = 20), 
-    axis.title.y = element_text(size = 20), 
-    axis.text.x = element_text(size = 14), 
-    axis.title.x = element_text(size = 14),  
-    plot.title = element_text(size = 28, face = "bold"), 
-    plot.subtitle = element_text(size = 15)
-  ) +
-  geom_point(size = 5) 
+emm_concern <- emmeans(rvd_concern_model, specs = "political_party")
+emm_concern <- transform(summary(emm_concern))
+
+emm_concern <- emm_concern %>% 
+  filter(political_party != "Prefer not to answer")
+
+rvd_concern_plot <- ggplot(emm_concern, aes(x = political_party, y = emmean, color = political_party, shape = political_party)) +
+  geom_point(position = position_dodge(width = 0.35), size = 4) +
+  scale_color_manual(name = "Political Party", values = c("blue", "red", "darkgreen")) +
+  labs(y = "Probability of Concern", x = "", color = "Political Party", title = "Predicted Probablity of Being 'Very Concerned' About Spread") +  # Make sure to add your title here
+  geom_errorbar(aes(ymin = emmean - SE, ymax = emmean + SE), width = 0.2, position = position_dodge(width = 0.35)) +
+  theme_minimal() +
+  theme(plot.title = element_text(size = 26),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.x = element_line(color = "grey70", size = 0.5),
+        panel.grid.major.y = element_line(color = "grey90", size = 0.5),
+        axis.title.x = element_text(size = 18),
+        axis.text.x = element_text(size = 15),
+        axis.title.y = element_text(size = 16),
+        legend.title = element_text(size = 12),
+        legend.text = element_text(size = 10)) +
+  guides(shape = "none")
 
 ggsave("rvd_concern_pooled.png", plot = rvd_concern_plot, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Concern", width = 12, height = 8, units = "in")
 
@@ -86,32 +88,32 @@ rm(rvd_concern_model,rvd_concern_plot)
 ```
 Now, let's take a look at number of non-household contacts glm.nb
 ```{r}
-rvd_contacts_model <- glm.nb(num_cc_nonhh  ~  `rate_prev_12/1/20` + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + resp_hhsize + r_race + political_party + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave, 
+rvd_contacts_model <- lm(num_cc_nonhh  ~  log_rate_prev_12_01_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + resp_hhsize + r_race + political_party + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave, 
                                    data = bics_zip_features, 
                                    weights = weight_pooled)
 
-print(summary(rvd_contacts_model))
+emm_contacts <- emmeans(rvd_contacts_model, specs = "political_party")
+emm_contacts <- transform(summary(emm_contacts))
 
-rvd_contacts_plot <- plot_model(
-  rvd_contacts_model,
-  colors = "black",
-  type = "pred",
-  auto.label = FALSE,
-  terms = c("political_party[Democrat, Republican, Independent]"),
-  title = "Partisan Differences in Non-Household Contacts \nThroughout the Pandemic",
-  axis.title = c("", "Predicted Non-Household Contacts")
-) +
-theme_minimal() +
-  theme(
-    legend.position = "none",
-    axis.text.y = element_text(size = 20), 
-    axis.title.y = element_text(size = 20), 
-    axis.text.x = element_text(size = 14), 
-    axis.title.x = element_text(size = 14),  
-    plot.title = element_text(size = 28, face = "bold"), 
-    plot.subtitle = element_text(size = 15)
-  ) +
-  geom_point(size = 5) 
+emm_contacts <- emm_contacts %>% 
+  filter(political_party != "Prefer not to answer")
+
+rvd_contacts_plot <- ggplot(emm_contacts, aes(x = political_party, y = emmean, color = political_party, shape = political_party)) +
+  geom_point(position = position_dodge(width = 0.35), size = 4) +
+  scale_color_manual(name = "Political Party", values = c("blue", "red", "darkgreen")) +
+  labs(y = "Predicted Contacts", x = "", color = "Political Party", title = "Predicted Number of Non-Household Contacts") +  # Make sure to add your title here
+  geom_errorbar(aes(ymin = emmean - SE, ymax = emmean + SE), width = 0.2, position = position_dodge(width = 0.35)) +
+  theme_minimal() +
+  theme(plot.title = element_text(size = 26),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.x = element_line(color = "grey70", size = 0.5),
+        panel.grid.major.y = element_line(color = "grey90", size = 0.5),
+        axis.title.x = element_text(size = 18),
+        axis.text.x = element_text(size = 15),
+        axis.title.y = element_text(size = 16),
+        legend.title = element_text(size = 12),
+        legend.text = element_text(size = 10)) +
+  guides(shape = "none")
 
 ggsave("rvd_contacts_pooled.png", plot = rvd_contacts_plot, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Contacts", width = 12, height = 8, units = "in")
 
@@ -123,33 +125,31 @@ And lastly, let's see how republicans and democrats differed on mask usage
 For now, I'm using a linear model for the sake of making it easy to interpret 
 ```{r}
 rvd_masks_model <- lm(Norm_Masks_Used  ~  log_rate_prev_12_01_20 + State_Government_Response_Index_11192020 + COUNTY_RUCC_2013 + male + educ_group + resp_yob + resp_hhsize + r_race + political_party + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave, 
-                                   data = bics_zip_features)
+                                   data = bics_zip_features,
+                      weights = weight_pooled)
 
-print(plot(rvd_masks_model))
-print(car::vif(rvd_masks_model))
-print(lmtest::dwtest(rvd_masks_model))
-print(summary(rvd_masks_model))
+emm_masks <- emmeans(rvd_masks_model, specs = "political_party")
+emm_masks <- transform(summary(emm_masks))
 
-rvd_masks_plot <- plot_model(
-  rvd_masks_model,
-  colors = "black",
-  type = "pred",
-  auto.label = FALSE,
-  terms = c("political_party[Democrat, Republican, Independent]"),
-  title = "Partisan Differences in Proportion of Non-Household \nContacts With a Mask on Throughout the Pandemic",
-  axis.title = c("", "Predicted Proportion of Contacts with a Mask")
-) +
-theme_minimal() +
-  theme(
-    legend.position = "none",
-    axis.text.y = element_text(size = 20), 
-    axis.title.y = element_text(size = 20), 
-    axis.text.x = element_text(size = 14), 
-    axis.title.x = element_text(size = 14),  
-    plot.title = element_text(size = 28, face = "bold"), 
-    plot.subtitle = element_text(size = 15)
-  ) +
-  geom_point(size = 5) 
+emm_masks <- emm_masks %>% 
+  filter(political_party != "Prefer not to answer")
+
+rvd_masks_plot <- ggplot(emm_masks, aes(x = political_party, y = emmean, color = political_party, shape = political_party)) +
+  geom_point(position = position_dodge(width = 0.35), size = 4) +
+  scale_color_manual(name = "Political Party", values = c("blue", "red", "darkgreen")) +
+  labs(y = "Probaility of Mask Usage", x = "", color = "Political Party", title = "Mask Use Probability in Non-Household Contacts") +  # Make sure to add your title here
+  geom_errorbar(aes(ymin = emmean - SE, ymax = emmean + SE), width = 0.2, position = position_dodge(width = 0.35)) +
+  theme_minimal() +
+  theme(plot.title = element_text(size = 26),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.x = element_line(color = "grey70", size = 0.5),
+        panel.grid.major.y = element_line(color = "grey90", size = 0.5),
+        axis.title.x = element_text(size = 18),
+        axis.text.x = element_text(size = 15),
+        axis.title.y = element_text(size = 16),
+        legend.title = element_text(size = 12),
+        legend.text = element_text(size = 10)) +
+  guides(shape = "none")
 
 ggsave("rvd_masks_pooled.png", plot = rvd_masks_plot, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Masks", width = 12, height = 8, units = "in")
 

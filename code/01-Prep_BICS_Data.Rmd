@@ -45,7 +45,7 @@ if (file_type == "manual") {
 
   df_w2$resp_occupation <- as.character(df_w2$resp_occupation)
   df_w4$resp_occupation <- as.character(df_w4$resp_occupation)
-
+  
   df <- bind_rows(df_w2, df_w3, df_w4, df_w5, df_w6)
   rm(df_w2, df_w3, df_w4, df_w5, df_w6)
   
@@ -665,6 +665,93 @@ bics_zip_features <- bics_zip_features %>%
          log_rate_prev_2_4_21 = log(`rate_prev_2/4/21`+1),
          log_rate_prev_5_12_21 = log(`rate_prev_5/12/21`+1))  #
 
+```
+Lastly, we decided that instead of cumilative cases we want the new cases from the week prior. 
+First, I'll read in the incidence data.
+Second, I'll create variables to match on.
+Third, I'll merge. 
+
+```{r}
+inc_w2 <- read_csv('../data/wave_2_incidence.csv', col_types = cols(FIPS = col_character())) %>% 
+  rename(COUNTY_FIPS = FIPS,
+         prev_week_incidence = wave_2_incidence)
+
+inc_w3 <- read_csv('../data/wave_3_incidence.csv', col_types = cols(FIPS = col_character())) %>% 
+  rename(COUNTY_FIPS = FIPS,
+         prev_week_incidence = wave_3_incidence)
+
+inc_w4 <- read_csv('../data/wave_4_incidence.csv', col_types = cols(FIPS = col_character())) %>% 
+  rename(COUNTY_FIPS = FIPS,
+         prev_week_incidence = wave_4_incidence)
+
+inc_w5 <- read_csv('../data/wave_5_incidence.csv', col_types = cols(FIPS = col_character())) %>% 
+  rename(COUNTY_FIPS = FIPS,
+         prev_week_incidence = wave_5_incidence)
+
+inc_w6 <- read_csv('../data/wave_6_incidence.csv', col_types = cols(FIPS = col_character())) %>% 
+  rename(COUNTY_FIPS = FIPS,
+         prev_week_incidence = wave_6_incidence)
+
+waves <- list()
+
+for(i in 2:6) {
+  waves[[paste("wave", i, sep = "")]] <- bics_zip_features %>%
+    filter(wave == i)
+}
+
+wave2 <- waves[["wave2"]]
+wave3 <- waves[["wave3"]]
+wave4 <- waves[["wave4"]]
+wave5 <- waves[["wave5"]]
+wave6 <- waves[["wave6"]]
+
+wave2 <- wave2 %>%
+  mutate(COUNTY_FIPS = str_pad(COUNTY_FIPS, width = 5, pad = "0", side = "left"))
+wave3 <- wave3 %>%
+  mutate(COUNTY_FIPS = str_pad(COUNTY_FIPS, width = 5, pad = "0", side = "left"))
+wave4 <- wave4 %>%
+  mutate(COUNTY_FIPS = str_pad(COUNTY_FIPS, width = 5, pad = "0", side = "left"))
+wave4 <- wave5 %>%
+  mutate(COUNTY_FIPS = str_pad(COUNTY_FIPS, width = 5, pad = "0", side = "left"))
+wave4 <- wave6 %>%
+  mutate(COUNTY_FIPS = str_pad(COUNTY_FIPS, width = 5, pad = "0", side = "left"))
+
+inc_w2 <- inc_w2 %>%
+  mutate(COUNTY_FIPS = str_pad(COUNTY_FIPS, width = 5, pad = "0", side = "left"))
+inc_w3 <- inc_w3 %>%
+  mutate(COUNTY_FIPS = str_pad(COUNTY_FIPS, width = 5, pad = "0", side = "left"))
+inc_w4 <- inc_w4 %>%
+  mutate(COUNTY_FIPS = str_pad(COUNTY_FIPS, width = 5, pad = "0", side = "left"))
+inc_w5 <- inc_w5 %>%
+  mutate(COUNTY_FIPS = str_pad(COUNTY_FIPS, width = 5, pad = "0", side = "left"))
+inc_w6 <- inc_w6 %>%
+  mutate(COUNTY_FIPS = str_pad(COUNTY_FIPS, width = 5, pad = "0", side = "left"))
+
+
+wave2 <- left_join(wave2, inc_w2, by = "COUNTY_FIPS") %>%
+  mutate(prev_week_inc_rate = (prev_week_incidence / POPESTIMATE2020) * 100000)
+
+wave3 <- left_join(wave3, inc_w3, by = "COUNTY_FIPS") %>%
+  mutate(prev_week_inc_rate = (prev_week_incidence / POPESTIMATE2020) * 100000)
+
+wave4 <- left_join(wave4, inc_w4, by = "COUNTY_FIPS") %>%
+  mutate(prev_week_inc_rate = (prev_week_incidence / POPESTIMATE2020) * 100000)
+
+wave5 <- left_join(wave5, inc_w5, by = "COUNTY_FIPS") %>%
+  mutate(prev_week_inc_rate = (prev_week_incidence / POPESTIMATE2021) * 100000)
+
+wave6 <- left_join(wave6, inc_w6, by = "COUNTY_FIPS") %>%
+  mutate(prev_week_inc_rate = (prev_week_incidence / POPESTIMATE2021) * 100000)
+
+bics_zip_features <- bind_rows(wave2, wave3, wave4, wave5, wave6)
+
+bics_zip_features <- bics_zip_features %>%
+  distinct(ResponseId, .keep_all = TRUE)
+
+rm(wave, wave2,wave3,wave4,wave5,wave6,inc_w2,inc_w3,inc_w4,inc_w5,inc_w6)
+
+print(sum(is.na(bics_zip_features$COUNTY_FIPS)))
+print(sum(is.na(bics_zip_features$prev_week_inc_rate)))
 ```
 
 ```{r}

@@ -624,14 +624,17 @@ legend("topright",
 Step 3. all controls
 not significant
 ```{r}
-dem_in_vax_model <- lm(Vaccinated ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + county_mask_mandate + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + extreme_liberal + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + CD_PERCENT_REPUBLICAN, 
-                                   data = D_df)
+dem_in_vax_model <- lm(Vaccinated ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + county_mask_mandate + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + CD_PERCENT_REPUBLICAN, 
+                                   data = D_df,
+                       weights = weight_pooled)
 
-rep_in_vax_model <- lm(Vaccinated ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + county_mask_mandate + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + extreme_conservative + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + CD_PERCENT_REPUBLICAN, 
-                                   data = R_df)
+rep_in_vax_model <- lm(Vaccinated ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + county_mask_mandate + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + CD_PERCENT_REPUBLICAN, 
+                                   data = R_df,
+                        weights = weight_pooled)
 
-ind_in_vax_model <- lm(Vaccinated ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + county_mask_mandate + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + extreme_liberal + extreme_conservative + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + CD_PERCENT_REPUBLICAN, 
-                                   data = I_df)
+ind_in_vax_model <- lm(Vaccinated ~  log_rate_prev_12_01_20 + COUNTY_RUCC_2013 + county_mask_mandate + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + CD_PERCENT_REPUBLICAN, 
+                                   data = I_df,
+                        weights = weight_pooled)
 
 print(summary(dem_in_vax_model))
 print(summary(rep_in_vax_model))
@@ -641,45 +644,36 @@ dem_in_rep_vax_values <- .5 + (dem_in_vax_model$coefficients["CD_PERCENT_REPUBLI
 rep_in_rep_vax_values <- .5 + (rep_in_vax_model$coefficients["CD_PERCENT_REPUBLICAN"]) * cd_percent_republican_range
 ind_in_rep_vax_values <- .5 + (ind_in_vax_model$coefficients["CD_PERCENT_REPUBLICAN"]) * cd_percent_republican_range
 
-plot(cd_percent_republican_range, dem_in_rep_mask_values, type = "l", col = "blue",
-     main = "Estimated Relationship between CD Percent Republican and Vaccination",
-     xlab = "CD Percent Republican", ylab = "Estimated Proportion Vaccination", ylim = c(0.3, 0.6), lwd = 2)
+vax_data <- data.frame(
+  CD_Percent_Republican = rep(cd_percent_republican_range, times = 3),  # Repeat for each group
+  Estimated_Vaccination = c(dem_in_rep_vax_values, rep_in_rep_vax_values, ind_in_rep_vax_values),  # Combine all values
+  Group = factor(rep(c("Democrats", "Republicans", "Independents"), each = length(cd_percent_republican_range)))  # Repeat each group name
+)
 
-lines(cd_percent_republican_range, rep_in_rep_mask_values, type = "l", col = "red", lwd = 2)
-lines(cd_percent_republican_range, ind_in_rep_mask_values, type = "l", col = "gray", lwd = 2)
+gg_vax_plot <- ggplot(vax_data, aes(x = CD_Percent_Republican, y = Estimated_Vaccination, color = Group)) +
+  geom_line(aes(linetype = Group), size = 1.5) +  # Use different linetypes for each group if preferred
+  scale_color_manual(values = c("Democrats" = "blue", "Republicans" = "red", "Independents" = "darkgreen")) +
+  labs(
+    title = "Relationship between CD Percent Republican and Vaccination",
+    x = "CD Percent Republican",
+    y = "Estimated Proportion Vaccinated",
+    color = "Political Affiliation"
+  ) +
+  theme_minimal() +
+  theme(plot.title = element_text(size = 26),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.x = element_line(color = "grey70", size = 0.5),
+        panel.grid.major.y = element_line(color = "grey90", size = 0.5),
+        axis.title.x = element_text(size = 18),
+        axis.text.x = element_text(size = 15),
+        axis.title.y = element_text(size = 16),
+        legend.title = element_text(size = 12),
+        legend.text = element_text(size = 10)) +
+  guides(linetype = "none")
 
-grid()
+ggsave("r_cd_vaccines.png", plot = gg_vax_plot, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Vaccines", width = 12, height = 8, units = "in")
 
-legend("topright", 
-       legend = c("Democrats", "Republicans", "Independents"), 
-       col = c("blue", "red","gray"), 
-       lty = 1, lwd = 2)
-```
-saving to png
-```{r}
-output_file_path <- "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Vaccines/r_cd_vaccines.png"
-
-png(filename = output_file_path, width = 800, height = 600)
-
-dem_in_rep_vax_values <- .5 + (dem_in_vax_model$coefficients["CD_PERCENT_REPUBLICAN"]) * cd_percent_republican_range
-rep_in_rep_vax_values <- .5 + (rep_in_vax_model$coefficients["CD_PERCENT_REPUBLICAN"]) * cd_percent_republican_range
-ind_in_rep_vax_values <- .5 + (ind_in_vax_model$coefficients["CD_PERCENT_REPUBLICAN"]) * cd_percent_republican_range
-
-plot(cd_percent_republican_range, dem_in_rep_mask_values, type = "l", col = "blue",
-     main = "Estimated Relationship between CD Percent Republican and Vaccination",
-     xlab = "CD Percent Republican", ylab = "Estimated Proportion Vaccination", ylim = c(0.2, 0.6), lwd = 2)
-
-lines(cd_percent_republican_range, rep_in_rep_mask_values, type = "l", col = "red", lwd = 2)
-lines(cd_percent_republican_range, ind_in_rep_mask_values, type = "l", col = "gray", lwd = 2)
-
-grid()
-
-legend("topright", 
-       legend = c("Democrats", "Republicans", "Independents"), 
-       col = c("blue", "red","gray"), 
-       lty = 1, lwd = 2)
-
-dev.off()
+gg_vax_plot
 ```
 
 ```{r}

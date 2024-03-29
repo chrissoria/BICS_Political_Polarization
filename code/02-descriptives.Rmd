@@ -51,7 +51,9 @@ average_by_party <- filtered_df %>%
     average_white = weighted.mean(white, w = weight_pooled, na.rm = TRUE),
     average_hispanic = weighted.mean(r_hispanic_num, w = weight_pooled, na.rm = TRUE),
     average_household_size = weighted.mean(resp_hhsize, w = weight_pooled, na.rm = TRUE),
-    average_urban = weighted.mean(COUNTY_RUCC_2013, w = weight_pooled, na.rm = TRUE)
+    average_urban = weighted.mean(COUNTY_RUCC_2013, w = weight_pooled, na.rm = TRUE),
+    num_houshold = weighted.mean(num_cc_nonhh, w = weight_pooled, na.rm = TRUE),
+    num_masks = weighted.mean(Norm_Masks_Used, w = weight_pooled, na.rm = TRUE)
   )
 
 average_by_party
@@ -411,8 +413,10 @@ bi_age <- lm(Norm_Masks_Used ~ young, data = bics_zip_features, weights = weight
 bi_party <- lm(Norm_Masks_Used ~ republican, data = RD_df, weights = weight_pooled)
 bi_race <- lm(Norm_Masks_Used ~ white, data = bics_zip_features, weights = weight_pooled)
 bi_gender <- lm(Norm_Masks_Used ~ male, data = bics_zip_features, weights = weight_pooled)
-
-summary(bi_party)
+bi_nonhh <- lm(num_cc_nonhh ~ prev_week_inc_rate, data = bics_zip_features, weights = weight_pooled)
+bi_mask <- lm(Norm_Masks_Used ~ prev_week_inc_rate, data = bics_zip_features, weights = weight_pooled)
+print(summary(bi_nonhh))
+print(summary(bi_mask))
 
 emm_race <- emmeans(bi_race, specs = pairwise ~ white)
 emm_gender <- emmeans(bi_gender, specs = pairwise ~ male)
