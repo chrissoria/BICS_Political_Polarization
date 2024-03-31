@@ -52,7 +52,8 @@ average_by_party <- filtered_df %>%
     average_hispanic = weighted.mean(r_hispanic_num, w = weight_pooled, na.rm = TRUE),
     average_household_size = weighted.mean(resp_hhsize, w = weight_pooled, na.rm = TRUE),
     average_urban = weighted.mean(COUNTY_RUCC_2013, w = weight_pooled, na.rm = TRUE),
-    num_houshold = weighted.mean(num_cc_nonhh, w = weight_pooled, na.rm = TRUE),
+    num_non_houshold_cc = weighted.mean(num_cc_nonhh, w = weight_pooled, na.rm = TRUE),
+    num_cc = weighted.mean(num_cc, w = weight_pooled, na.rm = TRUE),
     num_masks = weighted.mean(Norm_Masks_Used, w = weight_pooled, na.rm = TRUE)
   )
 
@@ -413,10 +414,6 @@ bi_age <- lm(Norm_Masks_Used ~ young, data = bics_zip_features, weights = weight
 bi_party <- lm(Norm_Masks_Used ~ republican, data = RD_df, weights = weight_pooled)
 bi_race <- lm(Norm_Masks_Used ~ white, data = bics_zip_features, weights = weight_pooled)
 bi_gender <- lm(Norm_Masks_Used ~ male, data = bics_zip_features, weights = weight_pooled)
-bi_nonhh <- lm(num_cc_nonhh ~ prev_week_inc_rate, data = bics_zip_features, weights = weight_pooled)
-bi_mask <- lm(Norm_Masks_Used ~ prev_week_inc_rate, data = bics_zip_features, weights = weight_pooled)
-print(summary(bi_nonhh))
-print(summary(bi_mask))
 
 emm_race <- emmeans(bi_race, specs = pairwise ~ white)
 emm_gender <- emmeans(bi_gender, specs = pairwise ~ male)
@@ -464,6 +461,86 @@ pred_race
 
 rm(emm_race, emm_gender, emm_age, emm_party, combined_contrasts, pred_race, df_race_contrasts, df_gender_contrasts, df_age_contrasts, df_party_contrasts, contr_age, contr_gender, contr_party, contr_race, bi_age, bi_gender, bi_party, bi_race)
 ```
+Let's find out how prevalence rates impact contacts and mask usage. Previous week rates are also significant predictors, but not as strong as current week leading up to data collection date
+```{r}
+bi_nonhh <- lm(num_cc_nonhh ~ log_current_week_inc_rate, data = bics_zip_features, weights = weight_pooled)
+bi_mask <- lm(Norm_Masks_Used ~ log_current_week_inc_rate, data = bics_zip_features, weights = weight_pooled)
+print(summary(bi_nonhh))
+print(summary(bi_mask))
+bi_nonhh_lag <- lm(num_cc_nonhh ~ log_prev_week_inc_rate, data = bics_zip_features, weights = weight_pooled)
+bi_mask_lag <- lm(Norm_Masks_Used ~ log_prev_week_inc_rate, data = bics_zip_features, weights = weight_pooled)
+print(summary(bi_nonhh_lag))
+print(summary(bi_mask_lag))
+
+rm(bi_nonhh,bi_mask,bi_nonhh_lag,bi_mask_lag)
+```
+I find that the association between incidence and non-household continues when I add in a control for wave. 
+```{r}
+bi_nonhh <- lm(num_cc_nonhh ~ log_current_week_inc_rate + wave, data = bics_zip_features, weights = weight_pooled)
+bi_mask <- lm(Norm_Masks_Used ~ log_current_week_inc_rate + wave, data = bics_zip_features, weights = weight_pooled)
+print(summary(bi_nonhh))
+print(summary(bi_mask))
+bi_nonhh_lag <- lm(num_cc_nonhh ~ log_prev_week_inc_rate + wave, data = bics_zip_features, weights = weight_pooled)
+bi_mask_lag <- lm(Norm_Masks_Used ~ log_prev_week_inc_rate + wave, data = bics_zip_features, weights = weight_pooled)
+print(summary(bi_nonhh_lag))
+print(summary(bi_mask_lag))
+
+rm(bi_nonhh,bi_mask,bi_nonhh_lag,bi_mask_lag)
+```
+Let's see at which wave the association breaks down. 
+```{r}
+contacts_R_v_D_w2 <- lm(num_cc_nonhh ~  log_current_week_inc_rate, data = subset(bics_zip_features, wave == 2, weights = weight_pooled))
+
+#model for Wave 3 (September 12-20, '20)
+contacts_R_v_D_w3 <- lm(num_cc_nonhh ~ log_current_week_inc_rate, data = subset(bics_zip_features, wave == 3, weights = weight_pooled))
+
+# Model for Wave 4 (December 1-7, '20')
+contacts_R_v_D_w4 <- lm(num_cc_nonhh ~  log_current_week_inc_rate, data = subset(bics_zip_features, wave == 4, weights = weight_pooled))
+
+#model for Wave 5 (February 9-14, '21')
+contacts_R_v_D_w5 <- lm(num_cc_nonhh ~ log_current_week_inc_rate, data = subset(bics_zip_features, wave == 5, weights = weight_pooled))
+
+# Model for Wave 6 (May 14-25, '21')
+contacts_R_v_D_w6 <- lm(num_cc_nonhh ~  log_current_week_inc_rate, data = subset(bics_zip_features, wave == 6, weights = weight_pooled))
+
+print(summary(contacts_R_v_D_w2))
+
+print(summary(contacts_R_v_D_w3))
+
+print(summary(contacts_R_v_D_w4))
+
+print(summary(contacts_R_v_D_w5))
+
+print(summary(contacts_R_v_D_w6))
+
+rm(contacts_R_v_D_w2,contacts_R_v_D_w3,contacts_R_v_D_w4,contacts_R_v_D_w5,contacts_R_v_D_w6)
+```
+
+
+Is the incidence rate a stronger predictor of democrat behavior than it is republican?
+Interestingly, incidence is only predictive of dem contact behavior but not republican
+```{r}
+bi_nonhh_dem <- lm(num_cc_nonhh ~ log_current_week_inc_rate, data = D_df, weights = weight_pooled)
+bi_nonhh_rep <- lm(num_cc_nonhh ~ log_current_week_inc_rate, data = R_df, weights = weight_pooled)
+
+print(summary(bi_nonhh_dem))
+print(summary(bi_nonhh_rep))
+
+rm(bi_nonhh_dem,bi_nonhh_rep)
+```
+And mask usage?
+Democrats are more reactive to incidence rates than Republicans are with a coefficient twice as large. In other words, every .02 increase in the incidence rate is associated with a 1% increase in the percentage of contacts that are carried out with a mask. 
+```{r}
+bi_mask_dem <- lm(Norm_Masks_Used ~ log_current_week_inc_rate, data = D_df, weights = weight_pooled)
+bi_mask_rep <- lm(Norm_Masks_Used ~ log_current_week_inc_rate, data = R_df, weights = weight_pooled)
+
+print(summary(bi_mask_dem))
+print(summary(bi_mask_rep))
+
+rm(bi_mask_dem,bi_mask_rep)
+```
+
+
 Lastly, let's do vaccination
 ```{r}
 bi_age <- lm(Vaccinated ~ young, data = bics_zip_features, weights = weight_pooled)

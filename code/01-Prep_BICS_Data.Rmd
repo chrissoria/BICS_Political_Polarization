@@ -75,6 +75,11 @@ names(df) <- make.unique(names(df))
 #df <- df %>% 
   #filter(city == "National")
 ```
+
+```{r}
+df$num_cc
+```
+
 Assigning dates to waves
 ```{r}
 df <- df %>%
@@ -232,7 +237,7 @@ df_aggregated <- df_alters_combined %>%
     Contacts = n()
   ) %>%
   mutate(
-    Norm_Masks_Used = Total_Masks_Used / Contacts,
+    Norm_Masks_Used = (Total_Masks_Used / Contacts) *100, #changing this to a percentage for ease of interpretation
     Norm_Gloves_Used = Total_Gloves_Used / Contacts,
     Norm_Other_Protective_Equipment_Used = Total_Other_Protective_Equipment_Used / Contacts,
     Non_Weighted_Safety_Index = (Norm_Masks_Used + Norm_Gloves_Used + Norm_Other_Protective_Equipment_Used) / 3,
@@ -271,7 +276,7 @@ columns_to_keep <- c('ResponseId','StartDate','resp_yob','resp_sex','resp_hispan
                      'industry','health_insurance','interview_date','wave','agecat','city','covid19_vax','covid19_whynot_vax',
                      'Non_Weighted_Safety_Index','Weighted_Safety_Index','Norm_Masks_Used','educ_group','contact_reduction',
                      'binary_concern','binary_concern_strong','resp_educ','Contacts',
-                     'data_collected_dates','weight_pooled','weight_city')
+                     'data_collected_dates','weight_pooled','weight_city','num_cc')
 
 df <- df[columns_to_keep]
 
@@ -674,23 +679,34 @@ Third, I'll merge.
 ```{r}
 inc_w2 <- read_csv('../data/wave_2_incidence.csv', col_types = cols(FIPS = col_character())) %>% 
   rename(COUNTY_FIPS = FIPS,
-         prev_week_incidence = wave_2_incidence)
+         current_week_incidence = wave_2_incidence,
+         prev_week_incidence = wave_2_inc_week_lag)
 
 inc_w3 <- read_csv('../data/wave_3_incidence.csv', col_types = cols(FIPS = col_character())) %>% 
   rename(COUNTY_FIPS = FIPS,
-         prev_week_incidence = wave_3_incidence)
+         current_week_incidence = wave_3_incidence,
+         prev_week_incidence = wave_3_inc_week_lag)
 
 inc_w4 <- read_csv('../data/wave_4_incidence.csv', col_types = cols(FIPS = col_character())) %>% 
   rename(COUNTY_FIPS = FIPS,
-         prev_week_incidence = wave_4_incidence)
+         current_week_incidence = wave_4_incidence,
+         prev_week_incidence = wave_4_inc_week_lag)
 
 inc_w5 <- read_csv('../data/wave_5_incidence.csv', col_types = cols(FIPS = col_character())) %>% 
   rename(COUNTY_FIPS = FIPS,
-         prev_week_incidence = wave_5_incidence)
+         current_week_incidence = wave_5_incidence,
+         prev_week_incidence = wave_5_inc_week_lag)
 
-inc_w6 <- read_csv('../data/wave_6_incidence.csv', col_types = cols(FIPS = col_character())) %>% 
+inc_w6 <- read_csv('../data/wave_6_incidence.csv') %>%
   rename(COUNTY_FIPS = FIPS,
-         prev_week_incidence = wave_6_incidence)
+         current_week_incidence = wave_6_incidence,
+         prev_week_incidence = wave_6_inc_week_lag)
+
+inc_w6 <- inc_w6 %>%
+  mutate(COUNTY_FIPS = floor(COUNTY_FIPS))
+
+inc_w6 <- inc_w6 %>%
+  mutate(COUNTY_FIPS = as.character(COUNTY_FIPS))
 
 waves <- list()
 
@@ -711,9 +727,9 @@ wave3 <- wave3 %>%
   mutate(COUNTY_FIPS = str_pad(COUNTY_FIPS, width = 5, pad = "0", side = "left"))
 wave4 <- wave4 %>%
   mutate(COUNTY_FIPS = str_pad(COUNTY_FIPS, width = 5, pad = "0", side = "left"))
-wave4 <- wave5 %>%
+wave5 <- wave5 %>%
   mutate(COUNTY_FIPS = str_pad(COUNTY_FIPS, width = 5, pad = "0", side = "left"))
-wave4 <- wave6 %>%
+wave6 <- wave6 %>%
   mutate(COUNTY_FIPS = str_pad(COUNTY_FIPS, width = 5, pad = "0", side = "left"))
 
 inc_w2 <- inc_w2 %>%
@@ -729,29 +745,60 @@ inc_w6 <- inc_w6 %>%
 
 
 wave2 <- left_join(wave2, inc_w2, by = "COUNTY_FIPS") %>%
-  mutate(prev_week_inc_rate = (prev_week_incidence / POPESTIMATE2020) * 100000)
+  mutate(current_week_inc_rate = (current_week_incidence / POPESTIMATE2020) * 100000,
+         prev_week_inc_rate = (prev_week_incidence / POPESTIMATE2020) * 100000)
 
 wave3 <- left_join(wave3, inc_w3, by = "COUNTY_FIPS") %>%
-  mutate(prev_week_inc_rate = (prev_week_incidence / POPESTIMATE2020) * 100000)
+  mutate(current_week_inc_rate = (current_week_incidence / POPESTIMATE2020) * 100000,
+         prev_week_inc_rate = (prev_week_incidence / POPESTIMATE2020) * 100000)
 
 wave4 <- left_join(wave4, inc_w4, by = "COUNTY_FIPS") %>%
-  mutate(prev_week_inc_rate = (prev_week_incidence / POPESTIMATE2020) * 100000)
+  mutate(current_week_inc_rate = (current_week_incidence / POPESTIMATE2020) * 100000,
+         prev_week_inc_rate = (prev_week_incidence / POPESTIMATE2020) * 100000)
+print(range(wave4$current_week_inc_rate))
 
 wave5 <- left_join(wave5, inc_w5, by = "COUNTY_FIPS") %>%
-  mutate(prev_week_inc_rate = (prev_week_incidence / POPESTIMATE2021) * 100000)
+  mutate(current_week_inc_rate = (current_week_incidence / POPESTIMATE2021) * 100000,
+         prev_week_inc_rate = (prev_week_incidence / POPESTIMATE2021) * 100000)
 
 wave6 <- left_join(wave6, inc_w6, by = "COUNTY_FIPS") %>%
-  mutate(prev_week_inc_rate = (prev_week_incidence / POPESTIMATE2021) * 100000)
+  mutate(current_week_inc_rate = (current_week_incidence / POPESTIMATE2021) * 100000,
+         prev_week_inc_rate = (prev_week_incidence / POPESTIMATE2021) * 100000)
 
 bics_zip_features <- bind_rows(wave2, wave3, wave4, wave5, wave6)
 
 bics_zip_features <- bics_zip_features %>%
   distinct(ResponseId, .keep_all = TRUE)
 
-rm(wave, wave2,wave3,wave4,wave5,wave6,inc_w2,inc_w3,inc_w4,inc_w5,inc_w6)
-
 print(sum(is.na(bics_zip_features$COUNTY_FIPS)))
 print(sum(is.na(bics_zip_features$prev_week_inc_rate)))
+```
+```{r}
+rm(waves, wave2,wave3,wave4,wave5,wave6,inc_w2,inc_w3,inc_w4,inc_w5,inc_w6)
+rm(df_w2,df_w3,df_w4,df_w5,df_w6)
+```
+After looking at the distribution of the incidence rate I noticed it's very right skewed.
+```{r}
+hist(bics_zip_features$prev_week_inc_rate, main="Histogram of Previous Week Incidence Rate",
+     xlab="Previous Week Incidence Rate", breaks=50, col="grey")
+```
+I will log this to make it a more normal distribution (a better fit for the linear models we'll be using in the early stage of work). log1p for handling zeros. 
+
+There were about 200 cases where the incidence rate is negative. Probably due to an error in reporting OR something else. For now, I'll drop all of those cases. 
+
+Afterwards, the distribution is still slightly skwewed, but much less so. 
+```{r}
+bics_zip_features <- bics_zip_features %>%
+  filter(current_week_inc_rate > 0)
+
+bics_zip_features <- bics_zip_features %>% 
+  mutate(
+    log_current_week_inc_rate = log(current_week_inc_rate + 1),
+    log_prev_week_inc_rate = log(prev_week_inc_rate + 1)
+  )
+
+hist(bics_zip_features$log_current_week_inc_rate, main="Histogram of Logged Previous Week Incidence Rate",
+     xlab="Logged Previous Week Incidence Rate", breaks=50, col="grey")
 ```
 
 ```{r}

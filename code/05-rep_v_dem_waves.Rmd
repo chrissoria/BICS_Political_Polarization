@@ -130,19 +130,19 @@ rm(all_emms,concern_rvd_waves)
 contacts
 ```{r}
 # Model for Wave 2 (June 18-24, '20)
-contacts_R_v_D_w2 <- lm(num_cc_nonhh ~  log_rate_prev_6_14_20 + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + resp_hhsize + r_race + political_party + r_working, data = subset(bics_zip_features, wave == 2, weights = weight_pooled))
+contacts_R_v_D_w2 <- lm(num_cc_nonhh ~  current_week_inc_rate + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + resp_hhsize + r_race + political_party + r_working, data = subset(bics_zip_features, wave == 2, weights = weight_pooled))
 
 #model for Wave 3 (September 12-20, '20)
-contacts_R_v_D_w3 <- lm(num_cc_nonhh ~ log_rate_prev_9_9_20 + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + resp_hhsize + r_race + political_party + r_working, data = subset(bics_zip_features, wave == 3))
+contacts_R_v_D_w3 <- lm(num_cc_nonhh ~ current_week_inc_rate + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + resp_hhsize + r_race + political_party + r_working, data = subset(bics_zip_features, wave == 3))
 
 # Model for Wave 4 (December 1-7, '20')
-contacts_R_v_D_w4 <- lm(num_cc_nonhh ~  log_rate_prev_12_01_20 + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + resp_hhsize + r_race + political_party + r_working, data = subset(bics_zip_features, wave == 4))
+contacts_R_v_D_w4 <- lm(num_cc_nonhh ~  current_week_inc_rate + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + resp_hhsize + r_race + political_party + r_working, data = subset(bics_zip_features, wave == 4))
 
 #model for Wave 5 (February 9-14, '21')
-contacts_R_v_D_w5 <- lm(num_cc_nonhh ~ log_rate_prev_2_4_21 + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + resp_hhsize + r_race + political_party + r_working, data = subset(bics_zip_features, wave == 5))
+contacts_R_v_D_w5 <- lm(num_cc_nonhh ~ current_week_inc_rate + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + resp_hhsize + r_race + political_party + r_working, data = subset(bics_zip_features, wave == 5))
 
 # Model for Wave 6 (May 14-25, '21')
-contacts_R_v_D_w6 <- lm(num_cc_nonhh ~  log_rate_prev_5_12_21 + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + resp_hhsize + r_race + political_party + r_working, data = subset(bics_zip_features, wave == 6))
+contacts_R_v_D_w6 <- lm(num_cc_nonhh ~  current_week_inc_rate + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + resp_hhsize + r_race + political_party + r_working, data = subset(bics_zip_features, wave == 6))
 
 emm_w2 <- emmeans(contacts_R_v_D_w2, specs = "political_party")
 emm_w3 <- emmeans(contacts_R_v_D_w3, specs = "political_party")
