@@ -400,7 +400,16 @@ pred_race <- ggplot(combined_contrasts, aes(x = contrast, y = -1 * estimate, fil
   scale_fill_manual(values = c("young0 - young1" = "gray", "republican0 - republican1" = "red", 
                                "white0 - white1" = "gray", "male0 - male1" = "gray")) +
   theme_minimal() +
-  theme(legend.position = "none")  # Remove legend if unnecessary
+  theme(legend.position = "none",
+        plot.title = element_text(size = 26),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.x = element_line(color = "grey70", size = 0.5),
+        panel.grid.major.y = element_line(color = "grey90", size = 0.5),
+        axis.title.x = element_text(size = 18),
+        axis.text.x = element_text(size = 15),
+        axis.title.y = element_text(size = 16),
+        legend.title = element_text(size = 12),
+        legend.text = element_text(size = 10)) # Remove legend if unnecessary
 
 ggsave("contrast_contacts.png", plot = pred_race, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Contacts", width = 12, height = 8, units = "in")
 
@@ -453,7 +462,16 @@ pred_race <- ggplot(combined_contrasts, aes(x = contrast, y = -1 * estimate, fil
   scale_fill_manual(values = c("young0 - young1" = "gray", "republican0 - republican1" = "red", 
                                "white0 - white1" = "gray", "male0 - male1" = "gray")) +
   theme_minimal() +
-  theme(legend.position = "none")  # Remove legend if unnecessary
+  theme(legend.position = "none",
+        plot.title = element_text(size = 26),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.x = element_line(color = "grey70", size = 0.5),
+        panel.grid.major.y = element_line(color = "grey90", size = 0.5),
+        axis.title.x = element_text(size = 18),
+        axis.text.x = element_text(size = 15),
+        axis.title.y = element_text(size = 16),
+        legend.title = element_text(size = 12),
+        legend.text = element_text(size = 10))  # Remove legend if unnecessary
 
 ggsave("contrast_masks.png", plot = pred_race, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Masks", width = 12, height = 8, units = "in")
 
@@ -588,7 +606,16 @@ pred_race <- ggplot(combined_contrasts, aes(x = contrast, y = -1 * estimate, fil
   scale_fill_manual(values = c("young0 - young1" = "gray", "republican0 - republican1" = "red", 
                                "white0 - white1" = "gray", "male0 - male1" = "gray")) +
   theme_minimal() +
-  theme(legend.position = "none") 
+  theme(legend.position = "none",
+        plot.title = element_text(size = 26),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.x = element_line(color = "grey70", size = 0.5),
+        panel.grid.major.y = element_line(color = "grey90", size = 0.5),
+        axis.title.x = element_text(size = 18),
+        axis.text.x = element_text(size = 15),
+        axis.title.y = element_text(size = 16),
+        legend.title = element_text(size = 12),
+        legend.text = element_text(size = 10)) 
 
 ggsave("contrast_vaccines.png", plot = pred_race, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Vaccines", width = 12, height = 8, units = "in")
 
