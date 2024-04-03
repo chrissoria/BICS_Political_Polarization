@@ -278,7 +278,7 @@ I0_a = 1 #intial infected in A
 I0_b = 1 # intial infected in B
 
 # parameters
-c_a = 5; c_b = 3 # average number of contacts per day 
+c_a = 7.1; c_b = 5.6 # average number of contacts per day 
 trans_p = 0.05 # probability of transmission given contact
 rho = 1/10 # 1 / infectious period
 mu = 0.01 # probability of dying following infection
@@ -292,7 +292,7 @@ theta_b = 200 # responsiveness to deaths for adopting protective behavior in gro
 omega_a = 0.1 # responsiveness to proportion of protected individuals for adopting protective behavior in group A
 omega_b = 0.2 # responsiveness to proportion of protected individuals for adopting protective behavior in group A
 
-h_a = c(.5, .99) # proportion of group A's total contact with members of their own group (bounded by population size and total contacts in group B)
+h_a = c(.5, .8) # proportion of group A's total contact with members of their own group (bounded by population size and total contacts in group B)
 epsilon = c(.5, .99) #measure of assortativeness in influence (i.e. are people equally aware and influenced by deaths/number of protected individuals in their own group versus in the out group)
 
 
