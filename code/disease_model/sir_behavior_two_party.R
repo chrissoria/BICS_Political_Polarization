@@ -243,7 +243,7 @@ N_a = frac_a*N0; N_b = N0 - N_a
 ls<-sir_two_group_pu(c = NA, c_a = 7.1, c_b = 5.6, 
                      trans_p = 0.05, rho=1/10, mu = 0.01, 
                      h_a=h_a, kappa=0.3, phi = 0.02,
-                     I0_a=1, I0_b=1, N0 = N0, frac_a = frac_a, time = 200,
+                     I0_a=1, I0_b=1, N0 = N0, frac_a = frac_a, time = 150,
                      theta_a = 100, theta_b = 200, epsilon = 0.5,
                      omega_a = 0.1, omega_b = 0.2,
                      get_params=TRUE)
@@ -268,6 +268,17 @@ plot((IUb+IPb)~time, data=sim, type="l", col="blue", ylab="Infected")
 plot((IUa+IPa)/N_a~time, data=sim, type="l", col="red", ylab="Infected")
 lines((IUb+IPb)/N_b~time, data=sim, col="blue", type="l", ylab="Infected")
 
+#### For PAA presentation ####
+
+ggplot(sim) +
+  geom_line(aes(x=time, y=(IUa+IPa)/N_a), size=line_sz, color="red") + 
+  geom_line(aes(x=time, y=(IUb+IPb)/N_b), size=line_sz, color="blue") + 
+  ylab("")+xlab("Time (days)")+ggtitle("Prevalence")+
+  theme_minimal() +
+  theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=14))  
+
+
 #### simulate across parameters ####
 
 # intial conditions
@@ -286,13 +297,13 @@ kappa = 0.3 # reduction in probability of transmission given contact resulting f
 phi = 0 # waning rate of protective behavior
 
 
-time = 365 # time steps for simulation
+time = 200 # time steps for simulation
 theta_a = 100 # responsiveness to deaths for adopting protective behavior in group A
 theta_b = 200 # responsiveness to deaths for adopting protective behavior in group B 
 omega_a = 0.1 # responsiveness to proportion of protected individuals for adopting protective behavior in group A
 omega_b = 0.2 # responsiveness to proportion of protected individuals for adopting protective behavior in group A
 
-h_a = c(.5, .8) # proportion of group A's total contact with members of their own group (bounded by population size and total contacts in group B)
+h_a = c(.5, .99) # proportion of group A's total contact with members of their own group (bounded by population size and total contacts in group B)
 epsilon = c(.5, .99) #measure of assortativeness in influence (i.e. are people equally aware and influenced by deaths/number of protected individuals in their own group versus in the out group)
 
 
@@ -318,14 +329,22 @@ expand.grid(h_a=h_a, epsilon=epsilon)  %>%
                                     " "))) -> df
 
 line_sz<-.8
-
+df <- df %>% mutate(NPa = IPa + SPa + RPa,
+                    NUa = IUa + SUa + RUa,
+                    NPb = IPb + SPb + RPb,
+                    NUb = IUb + SUb + RUb)
 
 ggplot(df %>% filter(epsilon == 0.99)) +
-  geom_line(aes(x=time, y=(IUa+IPa)/N_a), size=line_sz, color="red") + 
-  geom_line(aes(x=time, y=(IUb+IPb)/N_b), size=line_sz, color="blue") + 
+  geom_line(aes(x=time, y=(IUa)/NUa), size=line_sz, color="red") + 
+  geom_line(aes(x=time, y=(IPa)/NPa), size=line_sz, color="red", linetype = "dashed") +
+  geom_line(aes(x=time, y=(IUb)/NUb), size=line_sz, color="blue") + 
+  geom_line(aes(x=time, y=(IPb)/NPb), size=line_sz, color="blue", linetype = "dashed") + 
   facet_grid(~h_a) +
-  ylab("Infections")+
-  theme_minimal()
+  ylab("Prevalence")+
+  theme_minimal() +
+  theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=14))
+
   
 
 ggplot(df) +
