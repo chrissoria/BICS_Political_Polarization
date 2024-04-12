@@ -121,24 +121,23 @@ emm_contact <- emm_contact %>%
 
 emm_contact$political_party_to_CD <- factor(emm_contact$political_party_to_CD, levels = levels)
 
-cd_contact_plot <- ggplot(emm_contact, aes(x = political_party_to_CD, y = emmean, color = political_party_to_CD, shape = political_party_to_CD)) +
+cd_contact_plot <- ggplot(emm_contact, aes(x = political_party_to_CD, y = emmean, color = political_party_to_CD)) +
   geom_point(position = position_dodge(width = 0.35), size = 5) +
   scale_color_manual(name = "Political Party", values = c("blue", "purple", "magenta","red")) +
-  labs(y = "", x = "", color = "Political Party", title = "Predicted Contacts") + 
+  labs(y = "", x = "", color = "Political Party", title = "predicted contacts across partisan districts") + 
   geom_errorbar(aes(ymin = emmean - SE, ymax = emmean + SE), width = 0.2, position = position_dodge(width = 0.35)) +
   theme_minimal() +
   theme(legend.position = "none",
-        plot.title = element_text(size = 26),
+        plot.title = element_text(size = 18),
         panel.grid.minor.y = element_blank(),
         panel.grid.major.x = element_line(color = "grey70", size = 0.5),
         panel.grid.major.y = element_line(color = "grey90", size = 0.5),
         axis.title.x = element_text(size = 18),
-        axis.text.x = element_text(size = 15),
+        axis.text.x = element_text(size = 20),
+        axis.text.y = element_text(size = 22),
         axis.title.y = element_text(size = 16),
-        axis.text.y = element_text(size = 13),
         legend.title = element_text(size = 12),
         legend.text = element_text(size = 10)) +
-  guides(shape = "none")+
   scale_x_discrete(labels = c("Democrat in Democratic led CD" = "Democrat in \nDemocratic District", "Democrat in Republican led CD" = "Democrat in \nRepublican District", "Republican in Democratic led CD" = "Republican in \nDemocratic District", "Republican in Republican led CD" = "Republican in \nRepublican District"))
 
 ggsave("cd_contact_pooled.png", plot = cd_contact_plot, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Contacts", width = 12, height = 8, units = "in")
@@ -165,24 +164,23 @@ emm_masks <- emm_masks %>%
 
 emm_masks$political_party_to_CD <- factor(emm_masks$political_party_to_CD, levels = levels)
 
-mask_pred_plot <- ggplot(emm_masks, aes(x = political_party_to_CD, y = emmean, color = political_party_to_CD, shape = political_party_to_CD)) +
+mask_pred_plot <- ggplot(emm_masks, aes(x = political_party_to_CD, y = emmean, color = political_party_to_CD)) +
   geom_point(position = position_dodge(width = 0.35), size = 5) +
   scale_color_manual(name = "Political Party", values = c("blue", "purple", "magenta","red")) +
-  labs(y = "", x = "", color = "Political Party", title = "Predicted Percent Masked Contacts") + 
+  labs(y = "", x = "", color = "Political Party", title = "predicted percent of contacts masked") + 
   geom_errorbar(aes(ymin = emmean - SE, ymax = emmean + SE), width = 0.2, position = position_dodge(width = 0.35)) +
   theme_minimal() +
   theme(legend.position = "none",
-        plot.title = element_text(size = 26),
+        plot.title = element_text(size = 18),
         panel.grid.minor.y = element_blank(),
         panel.grid.major.x = element_line(color = "grey70", size = 0.5),
         panel.grid.major.y = element_line(color = "grey90", size = 0.5),
         axis.title.x = element_text(size = 18),
-        axis.text.x = element_text(size = 15),
-        axis.text.y = element_text(size = 13),
+        axis.text.x = element_text(size = 20),
+        axis.text.y = element_text(size = 22),
         axis.title.y = element_text(size = 16),
         legend.title = element_text(size = 12),
         legend.text = element_text(size = 10)) +
-  guides(shape = "none")+
   scale_x_discrete(labels = c("Democrat in Democratic led CD" = "Democrat in \nDemocratic District", "Democrat in Republican led CD" = "Democrat in \nRepublican District", "Republican in Democratic led CD" = "Republican in \nDemocratic District", "Republican in Republican led CD" = "Republican in \nRepublican District"))
 
 ggsave("cd_masks_pooled.png", plot = mask_pred_plot, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Masks", width = 12, height = 8, units = "in")
@@ -210,24 +208,23 @@ emm_vaccination <- emm_vaccination %>%
 
 emm_vaccination$political_party_to_CD <- factor(emm_vaccination$political_party_to_CD, levels = levels)
 
-vaccination_pred_plot <- ggplot(emm_vaccination, aes(x = political_party_to_CD, y = emmean, color = political_party_to_CD, shape = political_party_to_CD)) +
+vaccination_pred_plot <- ggplot(emm_vaccination, aes(x = political_party_to_CD, y = emmean, color = political_party_to_CD)) +
   geom_point(position = position_dodge(width = 0.35), size = 5) +
   scale_color_manual(name = "Political Party", values = c("blue", "purple", "magenta","red")) +
   labs(y = "", x = "", color = "Political Party", title = "Probability of Vaccination") + 
   geom_errorbar(aes(ymin = emmean - SE, ymax = emmean + SE), width = 0.2, position = position_dodge(width = 0.35)) +
   theme_minimal() +
   theme(legend.position = "none",
-        plot.title = element_text(size = 26),
+        plot.title = element_text(size = 18),
         panel.grid.minor.y = element_blank(),
         panel.grid.major.x = element_line(color = "grey70", size = 0.5),
         panel.grid.major.y = element_line(color = "grey90", size = 0.5),
         axis.title.x = element_text(size = 18),
-        axis.text.x = element_text(size = 15),
-        axis.text.y = element_text(size = 13),
+        axis.text.x = element_text(size = 20),
+        axis.text.y = element_text(size = 22),
         axis.title.y = element_text(size = 16),
         legend.title = element_text(size = 12),
         legend.text = element_text(size = 10)) +
-  guides(shape = "none")+
   scale_x_discrete(labels = c("Democrat in Democratic led CD" = "Democrat in \nDemocratic District", "Democrat in Republican led CD" = "Democrat in \nRepublican District", "Republican in Democratic led CD" = "Republican in \nDemocratic District", "Republican in Republican led CD" = "Republican in \nRepublican District"))
 
 ggsave("cd_vaccines_pooled.png", plot = vaccination_pred_plot, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Vaccines", width = 12, height = 8, units = "in")

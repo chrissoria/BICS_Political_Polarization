@@ -54,7 +54,8 @@ average_by_party <- filtered_df %>%
     average_metro = weighted.mean(Metro, w = weight_pooled, na.rm = TRUE),
     num_non_houshold_cc = weighted.mean(num_cc_nonhh, w = weight_pooled, na.rm = TRUE),
     num_cc = weighted.mean(num_cc, w = weight_pooled, na.rm = TRUE),
-    num_masks = weighted.mean(Norm_Masks_Used, w = weight_pooled, na.rm = TRUE)
+    num_masks = weighted.mean(Norm_Masks_Used, w = weight_pooled, na.rm = TRUE),
+    vaccinated = weighted.mean(Vaccinated, w = weight_pooled, na.rm = TRUE)
   )
 
 average_by_party

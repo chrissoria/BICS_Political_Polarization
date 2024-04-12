@@ -264,43 +264,68 @@ rm(rvd_vaccination_model,rvd_vaccination_plot)
 Below, I want to find out who is more responsive to incidence rates (democrats or republicans)
 After controls, neither is more or less responsive to incidence rates than the other when it comes to mask usage.
 ```{r}
-bi_mask_dem <- lm(Norm_Masks_Used ~ log_prev_week_inc_rate + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + resp_hhsize + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave, data = D_df, weights = weight_pooled)
+bi_mask_dem <- lm(Norm_Masks_Used ~ log_prev_week_inc_rate + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + resp_hhsize + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + as.factor(COUNTY_FIPS), data = D_df, weights = weight_pooled)
 print(summary(bi_mask_dem))
 
-bi_mask_rep <- lm(Norm_Masks_Used ~  log_prev_week_inc_rate + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + resp_hhsize + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave, data = R_df, weights = weight_pooled)
+bi_mask_dem_raw <- lm(Norm_Masks_Used ~ log_prev_week_inc_rate + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave, data = D_df, weights = weight_pooled)
+
+bi_mask_rep <- lm(Norm_Masks_Used ~  log_prev_week_inc_rate + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + resp_hhsize + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + as.factor(COUNTY_FIPS), data = R_df, weights = weight_pooled)
 print(summary(bi_mask_rep))
 
-bi_mask_ind <- lm(Norm_Masks_Used ~  log_prev_week_inc_rate + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + resp_hhsize + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave, data = I_df, weights = weight_pooled)
+bi_mask_rep_raw <- lm(Norm_Masks_Used ~ log_prev_week_inc_rate + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave, data = R_df, weights = weight_pooled)
+
+bi_mask_ind <- lm(Norm_Masks_Used ~  log_prev_week_inc_rate + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + resp_hhsize + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + as.factor(COUNTY_FIPS), data = I_df, weights = weight_pooled)
 print(summary(bi_mask_ind))
+
+bi_mask_ind_raw <- lm(Norm_Masks_Used ~ log_prev_week_inc_rate + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave, data = I_df, weights = weight_pooled)
 
 coef_dem <- summary(bi_mask_dem)$coefficients["log_prev_week_inc_rate", c("Estimate", "Std. Error")]
 coef_rep <- summary(bi_mask_rep)$coefficients["log_prev_week_inc_rate", c("Estimate", "Std. Error")]
 coef_ind <- summary(bi_mask_ind)$coefficients["log_prev_week_inc_rate", c("Estimate", "Std. Error")]
+coef_dem_raw <- summary(bi_mask_dem_raw)$coefficients["log_prev_week_inc_rate", c("Estimate", "Std. Error")]
+coef_rep_raw <- summary(bi_mask_rep_raw)$coefficients["log_prev_week_inc_rate", c("Estimate", "Std. Error")]
+coef_ind_raw <- summary(bi_mask_ind_raw)$coefficients["log_prev_week_inc_rate", c("Estimate", "Std. Error")]
 
-# Create a data frame for plotting
 coef_df <- data.frame(
   political_party = c("Democrat", "Republican", "Independent"),
   Estimate = c(coef_dem[1], coef_rep[1], coef_ind[1]),
-  SE = c(coef_dem[2], coef_rep[2], coef_ind[2])
+  SE = c(coef_dem[2], coef_rep[2], coef_ind[2]),
+  controls = "controls"
 )
 
-coef_df$political_party <- factor(coef_df$political_party, levels = c("Democrat", "Republican", "Independent"))
+coef_df_raw <- data.frame(
+  political_party = c("Democrat", "Republican", "Independent"),
+  Estimate = c(coef_dem_raw[1], coef_rep_raw[1], coef_ind_raw[1]),
+  SE = c(coef_dem_raw[2], coef_rep_raw[2], coef_ind_raw[2]),
+  controls = "baseline"
+)
 
-# Plot
-rvd_response_masks_plot <- ggplot(coef_df, aes(x = political_party, y = Estimate, color = political_party, shape = political_party)) +
-  geom_point(position = position_dodge(width = 0.35), size = 4) +
-  scale_color_manual(name = "Political Party", values = c("Democrat" = "blue", "Republican" = "red", "Independent" = "darkgreen")) +
-  labs(y = "Estimated Effect of Log Previous Week Incidence Rate", x = "", title = "Estimated Association Between Incidence Rate and Mask Usage by Party") +
-  geom_errorbar(aes(ymin = Estimate - SE, ymax = Estimate + SE), width = 0.2, position = position_dodge(width = 0.35)) +
+all_ceofs <- rbind(coef_df_raw,coef_df)
+
+all_ceofs$political_party <- factor(coef_df$political_party, levels = c("Democrat", "Republican", "Independent"))
+
+rvd_response_masks_plot <- ggplot(all_ceofs, aes(x = political_party, y = Estimate, color = political_party, group = interaction(political_party, controls))) +
+  geom_point(aes(shape = controls, size = controls), position = position_dodge(width = dodge_width)) +
+  scale_color_manual(name = "Political Party", values = c("blue", "red", "darkgreen", "blue", "red", "darkgreen")) +
+  scale_shape_manual(name = NULL, values = c("baseline" = 1, "controls" = 16), labels = c("unadjusted", "adjusted")) +
+  scale_size_manual(values = c("baseline" = 6, "controls" = 6), labels = c("unadjusted", "adjusted")) +
+  labs(y = "", x = "", color = "Political Party", title = "mask usage in response to new cases") +
+  geom_errorbar(aes(ymin = Estimate - SE, ymax = Estimate + SE), width = 0.2, position = position_dodge(width = dodge_width)) +
   theme_minimal() +
-  theme(plot.title = element_text(size = 20),
-        axis.title.x = element_text(size = 16),
-        axis.text.x = element_text(size = 14),
-        axis.title.y = element_text(size = 14),
+  theme(plot.title = element_text(size = 22),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.x = element_line(color = "grey70", size = 0.5),
+        panel.grid.major.y = element_line(color = "grey90", size = 0.5),
+        axis.title.x = element_text(size = 18),
+        axis.text.x = element_text(size = 22),
+        axis.text.y = element_text(size = 22),
+        axis.title.y = element_text(size = 16),
         legend.title = element_text(size = 12),
-        legend.text = element_text(size = 10)) +
-  guides(color = "none", shape = "none") +
-  scale_y_continuous(limits = c(2, NA))
+        legend.text = element_text(size = 22)) +
+  guides(shape = guide_legend(override.aes = list(size = 6)),
+         color = "none", 
+         size = "none") +
+  scale_y_continuous(limits = c(0, NA))
 
 ggsave("rvd_incidence_response.png", plot = rvd_response_masks_plot, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Masks", width = 12, height = 8, units = "in")
 
@@ -313,42 +338,67 @@ rm(bi_mask_dem,bi_mask_rep, bi_mask_ind, coef_df)
 However, when it comes to contact rates Republicans are much more responsive. Where Democrats are more likely to keep rates low.
 
 ```{r}
-bi_contact_dem <- lm(num_cc_nonhh ~ log_prev_week_inc_rate + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + resp_hhsize + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave, data = D_df, weights = weight_pooled)
+bi_contact_dem <- lm(num_cc_nonhh ~ log_prev_week_inc_rate + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + resp_hhsize + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + as.factor(COUNTY_FIPS), data = D_df, weights = weight_pooled)
 print(summary(bi_contact_dem))
 
-bi_contact_rep <- lm(num_cc_nonhh ~  log_prev_week_inc_rate + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + resp_hhsize + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave, data = R_df, weights = weight_pooled)
+bi_contact_dem_raw <- lm(num_cc_nonhh ~ log_prev_week_inc_rate + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave, data = D_df, weights = weight_pooled)
+
+bi_contact_rep <- lm(num_cc_nonhh ~  log_prev_week_inc_rate + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + resp_hhsize + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + as.factor(COUNTY_FIPS), data = R_df, weights = weight_pooled)
 print(summary(bi_contact_rep))
 
-bi_contact_ind <- lm(num_cc_nonhh ~  log_prev_week_inc_rate + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + resp_hhsize + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave, data = I_df, weights = weight_pooled)
+bi_contact_rep_raw <- lm(num_cc_nonhh ~ log_prev_week_inc_rate + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave, data = R_df, weights = weight_pooled)
+
+bi_contact_ind <- lm(num_cc_nonhh ~  log_prev_week_inc_rate + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + resp_hhsize + r_race + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave + as.factor(COUNTY_FIPS), data = I_df, weights = weight_pooled)
 print(summary(bi_contact_ind))
+
+bi_contact_ind_raw <- lm(num_cc_nonhh ~ log_prev_week_inc_rate + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave, data = I_df, weights = weight_pooled)
 
 coef_dem <- summary(bi_contact_dem)$coefficients["log_prev_week_inc_rate", c("Estimate", "Std. Error")]
 coef_rep <- summary(bi_contact_rep)$coefficients["log_prev_week_inc_rate", c("Estimate", "Std. Error")]
 coef_ind <- summary(bi_contact_ind)$coefficients["log_prev_week_inc_rate", c("Estimate", "Std. Error")]
+coef_dem_raw <- summary(bi_contact_dem_raw)$coefficients["log_prev_week_inc_rate", c("Estimate", "Std. Error")]
+coef_rep_raw <- summary(bi_contact_rep_raw)$coefficients["log_prev_week_inc_rate", c("Estimate", "Std. Error")]
+coef_ind_raw <- summary(bi_contact_ind_raw)$coefficients["log_prev_week_inc_rate", c("Estimate", "Std. Error")]
 
-# Create a data frame for plotting
 coef_df <- data.frame(
   political_party = c("Democrat", "Republican", "Independent"),
   Estimate = c(coef_dem[1], coef_rep[1], coef_ind[1]),
-  SE = c(coef_dem[2], coef_rep[2], coef_ind[2])
+  SE = c(coef_dem[2], coef_rep[2], coef_ind[2]),
+  controls = "controls"
 )
 
-coef_df$political_party <- factor(coef_df$political_party, levels = c("Democrat", "Republican", "Independent"))
+coef_df_raw <- data.frame(
+  political_party = c("Democrat", "Republican", "Independent"),
+  Estimate = c(coef_dem_raw[1], coef_rep_raw[1], coef_ind_raw[1]),
+  SE = c(coef_dem_raw[2], coef_rep_raw[2], coef_ind_raw[2]),
+  controls = "baseline"
+)
 
-# Plot
-rvd_response_contacts_plot <- ggplot(coef_df, aes(x = political_party, y = Estimate, color = political_party)) +
-  geom_point(position = position_dodge(width = 0.35), size = 4) +
-  scale_color_manual(name = "Political Party", values = c("Democrat" = "blue", "Republican" = "red", "Independent" = "darkgreen")) +
-  labs(y = "Estimated Effect of Log Previous Week Incidence Rate", x = "", title = "Estimated Association Between Incidence Rate and Non-Household Contacts by Party") +
-  geom_errorbar(aes(ymin = Estimate - SE, ymax = Estimate + SE), width = 0.2, position = position_dodge(width = 0.35)) +
+all_ceofs <- rbind(coef_df_raw,coef_df)
+
+all_ceofs$political_party <- factor(coef_df$political_party, levels = c("Democrat", "Republican", "Independent"))
+
+rvd_response_contacts_plot <- ggplot(all_ceofs, aes(x = political_party, y = Estimate, color = political_party, group = interaction(political_party, controls))) +
+  geom_point(aes(shape = controls, size = controls), position = position_dodge(width = dodge_width)) +
+  scale_color_manual(name = "Political Party", values = c("blue", "red", "darkgreen", "blue", "red", "darkgreen")) +
+  scale_shape_manual(name = NULL, values = c("baseline" = 1, "controls" = 16), labels = c("unadjusted", "adjusted")) +
+  scale_size_manual(values = c("baseline" = 6, "controls" = 6), labels = c("unadjusted", "adjusted")) +
+  labs(y = "", x = "", color = "Political Party", title = "contact reduction in response to new cases") +
+  geom_errorbar(aes(ymin = Estimate - SE, ymax = Estimate + SE), width = 0.2, position = position_dodge(width = dodge_width)) +
   theme_minimal() +
-  theme(plot.title = element_text(size = 20),
-        axis.title.x = element_text(size = 16),
-        axis.text.x = element_text(size = 14),
-        axis.title.y = element_text(size = 14),
+  theme(plot.title = element_text(size = 22),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.x = element_line(color = "grey70", size = 0.5),
+        panel.grid.major.y = element_line(color = "grey90", size = 0.5),
+        axis.title.x = element_text(size = 18),
+        axis.text.x = element_text(size = 22),
+        axis.text.y = element_text(size = 22),
+        axis.title.y = element_text(size = 16),
         legend.title = element_text(size = 12),
-        legend.text = element_text(size = 10)) +
-  guides(color = "none", shape = "none")
+        legend.text = element_text(size = 22)) +
+  guides(shape = guide_legend(override.aes = list(size = 6)),
+         color = "none", 
+         size = "none")
 
 ggsave("rvd_incidence_response.png", plot = rvd_response_contacts_plot, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Contacts", width = 12, height = 8, units = "in")
 
@@ -357,6 +407,10 @@ rvd_response_contacts_plot
 rm(emm_both,rvd_response_contacts_plot)
 
 rm(bi_contact_dem,bi_contact_rep, bi_contact_ind,coef_df)
+rm(bi_contact_dem_raw, bi_contact_rep_raw, bi_contact_ind_raw)
+```
 
+```{r}
+rm(all_ceofs, coef_df_raw, coef_df)
 ```
 
