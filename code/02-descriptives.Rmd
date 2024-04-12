@@ -51,13 +51,15 @@ average_by_party <- filtered_df %>%
     average_white = weighted.mean(white, w = weight_pooled, na.rm = TRUE),
     average_hispanic = weighted.mean(r_hispanic_num, w = weight_pooled, na.rm = TRUE),
     average_household_size = weighted.mean(resp_hhsize, w = weight_pooled, na.rm = TRUE),
-    average_urban = weighted.mean(COUNTY_RUCC_2013, w = weight_pooled, na.rm = TRUE),
+    average_metro = weighted.mean(Metro, w = weight_pooled, na.rm = TRUE),
     num_non_houshold_cc = weighted.mean(num_cc_nonhh, w = weight_pooled, na.rm = TRUE),
     num_cc = weighted.mean(num_cc, w = weight_pooled, na.rm = TRUE),
     num_masks = weighted.mean(Norm_Masks_Used, w = weight_pooled, na.rm = TRUE)
   )
 
 average_by_party
+
+write_csv(average_by_party, "../data/party_average_differences.csv")
 ```
 Do average contact and mask usage rates differ much over time?
 
@@ -395,21 +397,22 @@ pred_race <- ggplot(combined_contrasts, aes(x = contrast, y = -1 * estimate, fil
   geom_bar(stat = "identity", position = position_dodge(), width = 0.7) +  # Draw bars
   geom_errorbar(aes(ymin = -1 * (estimate + SE), ymax = -1 * (estimate - SE)), 
                 position = position_dodge(0.7), width = 0.25) +  # Add error bars
-  labs(x = "Contrast", y = "Estimated Gap in Non-Household Contacts", title = "Difference in Predicted Contacts Between Groups") +
+  labs(x = "", y = "", title = "differential non-household contacts by group") +
   scale_x_discrete(labels = c("Young - Old", "Republican - Democrat", "White - Non-White", "Male - Non-Male")) +
   scale_fill_manual(values = c("young0 - young1" = "gray", "republican0 - republican1" = "red", 
                                "white0 - white1" = "gray", "male0 - male1" = "gray")) +
   theme_minimal() +
   theme(legend.position = "none",
-        plot.title = element_text(size = 26),
+        plot.title = element_text(size = 18),
         panel.grid.minor.y = element_blank(),
         panel.grid.major.x = element_line(color = "grey70", size = 0.5),
         panel.grid.major.y = element_line(color = "grey90", size = 0.5),
         axis.title.x = element_text(size = 18),
-        axis.text.x = element_text(size = 15),
+        axis.text.x = element_text(size = 20),
+        axis.text.y = element_text(size = 22),
         axis.title.y = element_text(size = 16),
         legend.title = element_text(size = 12),
-        legend.text = element_text(size = 10)) # Remove legend if unnecessary
+        legend.text = element_text(size = 10))
 
 ggsave("contrast_contacts.png", plot = pred_race, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Contacts", width = 12, height = 8, units = "in")
 
@@ -457,21 +460,22 @@ pred_race <- ggplot(combined_contrasts, aes(x = contrast, y = -1 * estimate, fil
   geom_bar(stat = "identity", position = position_dodge(), width = 0.7) +  # Draw bars
   geom_errorbar(aes(ymin = -1 * (estimate + SE), ymax = -1 * (estimate - SE)), 
                 position = position_dodge(0.7), width = 0.25) +  # Add error bars
-  labs(x = "Contrast", y = "Estimated Gap in Mask Usage", title = "Difference in Predicted Mask Usage Between Groups") +
+  labs(x = "", y = "", title = "differential mask-usage by group") +
   scale_x_discrete(labels = c("Young - Old", "Republican - Democrat", "White - Non-White", "Male - Non-Male")) +
   scale_fill_manual(values = c("young0 - young1" = "gray", "republican0 - republican1" = "red", 
                                "white0 - white1" = "gray", "male0 - male1" = "gray")) +
   theme_minimal() +
   theme(legend.position = "none",
-        plot.title = element_text(size = 26),
+        plot.title = element_text(size = 18),
         panel.grid.minor.y = element_blank(),
         panel.grid.major.x = element_line(color = "grey70", size = 0.5),
         panel.grid.major.y = element_line(color = "grey90", size = 0.5),
         axis.title.x = element_text(size = 18),
-        axis.text.x = element_text(size = 15),
+        axis.text.x = element_text(size = 20),
+        axis.text.y = element_text(size = 22),
         axis.title.y = element_text(size = 16),
         legend.title = element_text(size = 12),
-        legend.text = element_text(size = 10))  # Remove legend if unnecessary
+        legend.text = element_text(size = 10))
 
 ggsave("contrast_masks.png", plot = pred_race, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Masks", width = 12, height = 8, units = "in")
 
@@ -601,18 +605,19 @@ pred_race <- ggplot(combined_contrasts, aes(x = contrast, y = -1 * estimate, fil
   geom_bar(stat = "identity", position = position_dodge(), width = 0.7) + 
   geom_errorbar(aes(ymin = -1 * (estimate + SE), ymax = -1 * (estimate - SE)), 
                 position = position_dodge(0.7), width = 0.25) + 
-  labs(x = "Contrast", y = "Estimated Gap in Vaccination Rates", title = "Difference in Predicted Vaccination Between Groups") +
-  scale_x_discrete(labels = c("Young - Old", "Republican - Democrat", "White - Non-White", "Male - Non-Male")) +
+  labs(x = "", y = "", title = "differential vaccination rates by group") +
+  scale_x_discrete(labels = c("Young-Old", "Republican-Democrat", "White-Non-White", "Male-Non-Male")) +
   scale_fill_manual(values = c("young0 - young1" = "gray", "republican0 - republican1" = "red", 
                                "white0 - white1" = "gray", "male0 - male1" = "gray")) +
   theme_minimal() +
   theme(legend.position = "none",
-        plot.title = element_text(size = 26),
+        plot.title = element_text(size = 18),
         panel.grid.minor.y = element_blank(),
         panel.grid.major.x = element_line(color = "grey70", size = 0.5),
         panel.grid.major.y = element_line(color = "grey90", size = 0.5),
         axis.title.x = element_text(size = 18),
-        axis.text.x = element_text(size = 15),
+        axis.text.x = element_text(size = 20),
+        axis.text.y = element_text(size = 20),
         axis.title.y = element_text(size = 16),
         legend.title = element_text(size = 12),
         legend.text = element_text(size = 10)) 
@@ -672,5 +677,27 @@ contact_reduction_rvd_waves <- ggplot(all_emms, aes(x = wave, y = emmean, color 
 contact_reduction_rvd_waves
 
 rm(all_emms,contact_reduction_rvd_waves)
+```
+Let's plot the incidence rate alongside waves for descriptive purposes
+```{r}
+cases_plot <- ggplot(cases_df, aes(x = formal_dates, y = weekly_cases)) +
+  geom_col(fill = "darkgray", width = 25) + 
+  labs(x = "", y = "",title = "Weekly Average Cases") +
+  theme_minimal() +
+  scale_x_date(breaks = cases_df$formal_dates, labels = scales::date_format("%b, '%y")) + 
+  theme(legend.position = "none",
+        plot.title = element_text(size = 18),
+        panel.grid.minor = element_blank(),
+        panel.grid.major = element_blank(),
+        axis.title.x = element_text(size = 18),
+        axis.text.x = element_text(size = 25),
+        axis.text.y = element_text(size = 20),
+        axis.title.y = element_text(size = 16),
+        legend.title = element_text(size = 12),
+        legend.text = element_text(size = 10))
+
+print(cases_plot)
+
+ggsave("cases.png", plot = cases_plot, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/", width = 12, height = 8, units = "in")
 ```
 

@@ -8,8 +8,9 @@ output: html_document
 library(sjPlot)
 library(MASS)
 library(tidyverse)
+library(emmeans)
 
-emm_options(rg.limit = 25000)
+emm_options(rg.limit = 250000)
 ```
 
 
@@ -37,7 +38,8 @@ theme_minimal() +
     legend.position = "none",
     axis.text.y = element_text(size = 20), 
     axis.title.y = element_text(size = 20), 
-    axis.text.x = element_text(size = 14), 
+    axis.text.x = element_text(size = 15), 
+    axis.text.y = element_text(size = 13),
     axis.title.x = element_text(size = 14),  
     plot.title = element_text(size = 28, face = "bold"), 
     plot.subtitle = element_text(size = 15)
@@ -77,6 +79,7 @@ rvd_concern_plot <- ggplot(emm_concern, aes(x = political_party, y = emmean, col
         panel.grid.major.y = element_line(color = "grey90", size = 0.5),
         axis.title.x = element_text(size = 18),
         axis.text.x = element_text(size = 15),
+        axis.text.y = element_text(size = 13),
         axis.title.y = element_text(size = 16),
         legend.title = element_text(size = 12),
         legend.text = element_text(size = 10)) +
@@ -95,66 +98,106 @@ rvd_contacts_model <- lm(num_cc_nonhh  ~  log_current_week_inc_rate + county_mas
                                    data = bics_zip_features, 
                                    weights = weight_pooled)
 
+rvd_contacts_model_raw <- lm(num_cc_nonhh  ~ political_party + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave, 
+                                   data = bics_zip_features, 
+                                   weights = weight_pooled)
+
 emm_contacts <- emmeans(rvd_contacts_model, specs = "political_party")
 emm_contacts <- transform(summary(emm_contacts))
+
+emm_contacts$controls <- "controls"
+
+emm_contacts_raw <- emmeans(rvd_contacts_model_raw, specs = "political_party")
+emm_contacts_raw <- transform(summary(emm_contacts_raw))
+
+emm_contacts_raw$controls <- "baseline"
 
 emm_contacts <- emm_contacts %>% 
   filter(political_party != "Prefer not to answer")
 
-rvd_contacts_plot <- ggplot(emm_contacts, aes(x = political_party, y = emmean, color = political_party, shape = political_party)) +
-  geom_point(position = position_dodge(width = 0.35), size = 4) +
-  scale_color_manual(name = "Political Party", values = c("blue", "red", "darkgreen")) +
-  labs(y = "Predicted Contacts", x = "", color = "Political Party", title = "Predicted Number of Non-Household Contacts") +  # Make sure to add your title here
-  geom_errorbar(aes(ymin = emmean - SE, ymax = emmean + SE), width = 0.2, position = position_dodge(width = 0.35)) +
+emm_contacts_raw <- emm_contacts_raw %>% 
+  filter(political_party != "Prefer not to answer")
+
+all_emms <- rbind(emm_contacts_raw, emm_contacts)
+
+rvd_contacts_plot <- ggplot(all_emms, aes(x = political_party, y = emmean, color = political_party, group = interaction(political_party, controls))) +
+  geom_point(aes(shape = controls, size = controls), position = position_dodge(width = dodge_width)) +
+  scale_color_manual(name = "Political Party", values = c("blue", "red", "darkgreen", "blue", "red", "darkgreen")) +
+  scale_shape_manual(name = NULL, values = c("baseline" = 1, "controls" = 16)) +
+  scale_size_manual(values = c("baseline" = 6, "controls" = 6)) +
+  labs(y = "", x = "", color = "Political Party", title = "predicted number of daily contacts") +
+  geom_errorbar(aes(ymin = emmean - SE, ymax = emmean + SE), width = 0.2, position = position_dodge(width = dodge_width)) +
   theme_minimal() +
-  theme(legend.position = "none",
-        plot.title = element_text(size = 26),
+  theme(plot.title = element_text(size = 22),
         panel.grid.minor.y = element_blank(),
         panel.grid.major.x = element_line(color = "grey70", size = 0.5),
         panel.grid.major.y = element_line(color = "grey90", size = 0.5),
         axis.title.x = element_text(size = 18),
-        axis.text.x = element_text(size = 15),
+        axis.text.x = element_text(size = 22),
+        axis.text.y = element_text(size = 22),
         axis.title.y = element_text(size = 16),
         legend.title = element_text(size = 12),
-        legend.text = element_text(size = 10)) +
-  guides(shape = "none")
+        legend.text = element_text(size = 22)) +
+  guides(shape = guide_legend(override.aes = list(size = 6)),
+         color = "none", 
+         size = "none")
 
 ggsave("rvd_contacts_pooled.png", plot = rvd_contacts_plot, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Contacts", width = 12, height = 8, units = "in")
 
 rvd_contacts_plot
 
-rm(rvd_contacts_model,rvd_contacts_plot)
+rm(rvd_contacts_model, rvd_contacts_plot, all_emms, emm_contact, emm_contacts, emm_contacts_raw,rvd_contacts_model_raw)
 ```
 And lastly, let's see how republicans and democrats differed on mask usage
 For now, I'm using a linear model for the sake of making it easy to interpret 
 ```{r}
-rvd_masks_model <- lm(Norm_Masks_Used  ~  log_current_week_inc_rate + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + resp_hhsize + r_race + political_party + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave, 
-                                   data = bics_zip_features,
-                      weights = weight_pooled)
+rvd_masks_model <- lm(Norm_Masks_Used  ~  log_current_week_inc_rate + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + resp_hhsize + r_race + political_party + r_working + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave, 
+                                   data = bics_zip_features, 
+                                   weights = weight_pooled)
+
+rvd_masks_model_raw <- lm(Norm_Masks_Used  ~ political_party + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave, 
+                                   data = bics_zip_features, 
+                                   weights = weight_pooled)
 
 emm_masks <- emmeans(rvd_masks_model, specs = "political_party")
 emm_masks <- transform(summary(emm_masks))
 
+emm_masks$controls <- "controls"
+
+emm_masks_raw <- emmeans(rvd_masks_model_raw, specs = "political_party")
+emm_masks_raw <- transform(summary(emm_masks_raw))
+
+emm_masks_raw$controls <- "baseline"
+
 emm_masks <- emm_masks %>% 
   filter(political_party != "Prefer not to answer")
 
-rvd_masks_plot <- ggplot(emm_masks, aes(x = political_party, y = emmean, color = political_party, shape = political_party)) +
-  geom_point(position = position_dodge(width = 0.35), size = 4) +
-  scale_color_manual(name = "Political Party", values = c("blue", "red", "darkgreen")) +
-  labs(y = "Predicted Percentage Masked Contacts", x = "", color = "Political Party", title = "Mask Use Probability in Non-Household Contacts") +  # Make sure to add your title here
-  geom_errorbar(aes(ymin = emmean - SE, ymax = emmean + SE), width = 0.2, position = position_dodge(width = 0.35)) +
+emm_masks_raw <- emm_masks_raw %>% 
+  filter(political_party != "Prefer not to answer")
+
+all_emms <- rbind(emm_masks_raw, emm_masks)
+
+rvd_masks_plot <- ggplot(all_emms, aes(x = political_party, y = emmean, color = political_party, group = interaction(political_party, controls))) +
+  geom_point(aes(shape = controls, size = controls), position = position_dodge(width = dodge_width)) +
+  scale_color_manual(name = "Political Party", values = c("blue", "red", "darkgreen", "blue", "red", "darkgreen")) +
+  scale_shape_manual(name = NULL, values = c("baseline" = 1, "controls" = 16)) +
+  scale_size_manual(values = c("baseline" = 6, "controls" = 6)) +
+  labs(y = "", x = "", color = "Political Party", title = "predicted percentage of contacts masked") +
+  geom_errorbar(aes(ymin = emmean - SE, ymax = emmean + SE), width = 0.2, position = position_dodge(width = dodge_width)) +
   theme_minimal() +
-  theme(legend.position = "none",
-        plot.title = element_text(size = 26),
+  theme(plot.title = element_text(size = 22),
         panel.grid.minor.y = element_blank(),
         panel.grid.major.x = element_line(color = "grey70", size = 0.5),
         panel.grid.major.y = element_line(color = "grey90", size = 0.5),
         axis.title.x = element_text(size = 18),
-        axis.text.x = element_text(size = 15),
+        axis.text.x = element_text(size = 22),
+        axis.text.y = element_text(size = 22),
         axis.title.y = element_text(size = 16),
         legend.title = element_text(size = 12),
-        legend.text = element_text(size = 10)) +
-  guides(shape = "none")
+        legend.text = element_text(size = 22)) +
+  guides(shape = guide_legend(override.aes = list(size = 6)),
+         color = "none", 
+         size = "none")
 
 ggsave("rvd_masks_pooled.png", plot = rvd_masks_plot, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Masks", width = 12, height = 8, units = "in")
 
@@ -164,34 +207,53 @@ rm(rvd_masks_model,rvd_masks_plot)
 ```
 Vaccines
 ```{r}
-emm_options(rg.limit = 25000)
-rvd_vaccination_model <- lm(Vaccinated  ~  log_current_week_inc_rate + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + resp_hhsize + r_race + political_party + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta, 
-                                   data = bics_zip_features,
-                            weights = weight_pooled)
+rvd_vaccines_model <- lm(Vaccinated  ~  log_current_week_inc_rate + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + resp_hhsize + r_race + political_party + r_working + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave, 
+                                   data = bics_zip_features, 
+                                   weights = weight_pooled)
 
-emm_vaccine <- emmeans(rvd_vaccination_model, specs = "political_party")
-emm_vaccine <- transform(summary(emm_vaccine))
+rvd_vaccines_model_raw <- lm(Vaccinated  ~ political_party + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave, 
+                                   data = bics_zip_features, 
+                                   weights = weight_pooled)
 
-emm_vaccine <- emm_vaccine %>% 
+emm_vaccines <- emmeans(rvd_vaccines_model, specs = "political_party")
+emm_vaccines <- transform(summary(emm_vaccines))
+
+emm_vaccines$controls <- "controls"
+
+emm_vaccines_raw <- emmeans(rvd_vaccines_model_raw, specs = "political_party")
+emm_vaccines_raw <- transform(summary(emm_vaccines_raw))
+
+emm_vaccines_raw$controls <- "baseline"
+
+emm_vaccines <- emm_vaccines %>% 
   filter(political_party != "Prefer not to answer")
 
-rvd_vaccination_plot <- ggplot(emm_vaccine, aes(x = political_party, y = emmean, color = political_party, shape = political_party)) +
-  geom_point(position = position_dodge(width = 0.35), size = 4) +
-  scale_color_manual(name = "Political Party", values = c("blue", "red", "darkgreen")) +
-  labs(y = "Probability of Vaccination", x = "", color = "Political Party", title = "Predicted Probablity of Getting the Vaccine") +  # Make sure to add your title here
-  geom_errorbar(aes(ymin = emmean - SE, ymax = emmean + SE), width = 0.2, position = position_dodge(width = 0.35)) +
+emm_vaccines_raw <- emm_vaccines_raw %>% 
+  filter(political_party != "Prefer not to answer")
+
+all_emms <- rbind(emm_vaccines_raw, emm_vaccines)
+
+rvd_vaccination_plot <- ggplot(all_emms, aes(x = political_party, y = emmean, color = political_party, group = interaction(political_party, controls))) +
+  geom_point(aes(shape = controls, size = controls), position = position_dodge(width = dodge_width)) +
+  scale_color_manual(name = "Political Party", values = c("blue", "red", "darkgreen", "blue", "red", "darkgreen")) +
+  scale_shape_manual(name = NULL, values = c("baseline" = 1, "controls" = 16)) +
+  scale_size_manual(values = c("baseline" = 6, "controls" = 6)) +
+  labs(y = "", x = "", color = "Political Party", title = "predicted probability of vaccination") +
+  geom_errorbar(aes(ymin = emmean - SE, ymax = emmean + SE), width = 0.2, position = position_dodge(width = dodge_width)) +
   theme_minimal() +
-  theme(legend.position = "none",
-        plot.title = element_text(size = 26),
+  theme(plot.title = element_text(size = 22),
         panel.grid.minor.y = element_blank(),
         panel.grid.major.x = element_line(color = "grey70", size = 0.5),
         panel.grid.major.y = element_line(color = "grey90", size = 0.5),
         axis.title.x = element_text(size = 18),
-        axis.text.x = element_text(size = 15),
+        axis.text.x = element_text(size = 22),
+        axis.text.y = element_text(size = 22),
         axis.title.y = element_text(size = 16),
         legend.title = element_text(size = 12),
-        legend.text = element_text(size = 10)) +
-  guides(shape = "none")
+        legend.text = element_text(size = 22)) +
+  guides(shape = guide_legend(override.aes = list(size = 6)),
+         color = "none", 
+         size = "none")
 
 ggsave("rvd_vaccines_pooled.png", plot = rvd_vaccination_plot, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Vaccines", width = 12, height = 8, units = "in")
 

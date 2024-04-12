@@ -621,6 +621,14 @@ bics_zip_features <- bics_zip_features %>%
     CONGRESSPERSON_PARTY == "Democratic" ~ 1,
     TRUE ~ 0
   ))
+
+#metro
+bics_zip_features <- bics_zip_features %>%
+  mutate(Metro = case_when(
+    COUNTY_RUCC_2013 < 3 ~ 1,
+    COUNTY_RUCC_2013 > 3 ~ 0,
+    TRUE ~ NA_real_ 
+  ))
 ```
 Now, it might be the case that political orientation is more important that political party. For example, Republicans in certain regions might actually just be less conservative, and therefore it might not be the party affiliation that matters but political orientation
 ```{r}
@@ -820,10 +828,15 @@ write_csv(R_df, "../data/R_BICS_ZIP_Features.csv")
 ```
 building the df for weekly case counts
 ```{r}
+library(lubridate)
+
 dates <- c("June 18-24, '20", "September 12-20, '20", "December 1-7, '20", "February 9-14, '21", "May 14-25, '21")
+dates_formal <- c("2020-06-18", "2020-09-12", "2020-12-01", "2021-02-09", "2021-05-14")
+dates_formal <-ymd(dates_formal)
+
 weekly_cases <- c(693,772,2351,2192,545)
 
-cases_df <- data.frame(wave = dates, weekly_cases = weekly_cases)
+cases_df <- data.frame(wave = dates, weekly_cases = weekly_cases, formal_dates = dates_formal)
 
 cases_df$wave <- factor(cases_df$wave, levels = cases_df$wave)
 

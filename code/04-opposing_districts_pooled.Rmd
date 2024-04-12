@@ -9,6 +9,8 @@ library(sjPlot)
 library(MASS)
 library(tidyverse)
 library(cowplot)
+library(emmeans)
+emm_options(rg.limit = 250000)
 ```
 
 
@@ -55,7 +57,6 @@ cd_concern_model <- lm(binary_concern_strong ~  log_current_week_inc_rate + coun
 
 print(summary(cd_concern_model))
 
-emm_options(rg.limit = 130000)
 emm_concern <- emmeans(cd_concern_model, specs = "political_party_to_CD")
 emm_concern <- transform(summary(emm_concern))
 
@@ -68,9 +69,9 @@ emm_concern <- emm_concern %>%
 emm_concern$political_party_to_CD <- factor(emm_concern$political_party_to_CD, levels = levels)
 
 cd_concern_plot <- ggplot(emm_concern, aes(x = political_party_to_CD, y = emmean, color = political_party_to_CD, shape = political_party_to_CD)) +
-  geom_point(position = position_dodge(width = 0.35), size = 4) +
+  geom_point(position = position_dodge(width = 0.35), size = 5) +
   scale_color_manual(name = "Political Party", values = c("blue", "purple", "magenta","red")) +
-  labs(y = "Probability of Concern", x = "", color = "Political Party", title = "Partisan Differences in Concern about Spread of the Virus \nAcross Opposing Party Districts") +
+  labs(y = "", x = "", color = "Political Party", title = "Probability of Concern") +
   geom_errorbar(aes(ymin = emmean - SE, ymax = emmean + SE), width = 0.2, position = position_dodge(width = 0.35)) +
   theme_minimal() +
   theme(legend.position = "none",
@@ -80,6 +81,7 @@ cd_concern_plot <- ggplot(emm_concern, aes(x = political_party_to_CD, y = emmean
         panel.grid.major.y = element_line(color = "grey90", size = 0.5),
         axis.title.x = element_text(size = 18),
         axis.text.x = element_text(size = 15),
+        axis.text.y = element_text(size = 13),
         axis.title.y = element_text(size = 16),
         legend.title = element_text(size = 12),
         legend.text = element_text(size = 10)) +
@@ -102,7 +104,7 @@ filtered_df <- bics_zip_features %>%
 print(table(filtered_df$political_party_to_CD))
 print(table(filtered_df$politcal_party))
 
-cd_contact_model <- glm.nb(num_cc_nonhh ~ log_current_week_inc_rate + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + cityNY +`cityBay Area` + cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + political_party_to_CD, 
+cd_contact_model <- lm(num_cc_nonhh ~ log_current_week_inc_rate + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + cityNY +`cityBay Area` + cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + political_party_to_CD, 
                            data = bics_zip_features,
                            weights = weight_pooled)
 
@@ -120,9 +122,9 @@ emm_contact <- emm_contact %>%
 emm_contact$political_party_to_CD <- factor(emm_contact$political_party_to_CD, levels = levels)
 
 cd_contact_plot <- ggplot(emm_contact, aes(x = political_party_to_CD, y = emmean, color = political_party_to_CD, shape = political_party_to_CD)) +
-  geom_point(position = position_dodge(width = 0.35), size = 4) +
+  geom_point(position = position_dodge(width = 0.35), size = 5) +
   scale_color_manual(name = "Political Party", values = c("blue", "purple", "magenta","red")) +
-  labs(y = "Predicted Contacts", x = "", color = "Political Party", title = "Partisan Differences in Non-Household Contacts Across \nOpposing Party Districts") + 
+  labs(y = "", x = "", color = "Political Party", title = "Predicted Contacts") + 
   geom_errorbar(aes(ymin = emmean - SE, ymax = emmean + SE), width = 0.2, position = position_dodge(width = 0.35)) +
   theme_minimal() +
   theme(legend.position = "none",
@@ -133,6 +135,7 @@ cd_contact_plot <- ggplot(emm_contact, aes(x = political_party_to_CD, y = emmean
         axis.title.x = element_text(size = 18),
         axis.text.x = element_text(size = 15),
         axis.title.y = element_text(size = 16),
+        axis.text.y = element_text(size = 13),
         legend.title = element_text(size = 12),
         legend.text = element_text(size = 10)) +
   guides(shape = "none")+
@@ -163,9 +166,9 @@ emm_masks <- emm_masks %>%
 emm_masks$political_party_to_CD <- factor(emm_masks$political_party_to_CD, levels = levels)
 
 mask_pred_plot <- ggplot(emm_masks, aes(x = political_party_to_CD, y = emmean, color = political_party_to_CD, shape = political_party_to_CD)) +
-  geom_point(position = position_dodge(width = 0.35), size = 4) +
+  geom_point(position = position_dodge(width = 0.35), size = 5) +
   scale_color_manual(name = "Political Party", values = c("blue", "purple", "magenta","red")) +
-  labs(y = "Predicted Percent Masked Contacts", x = "", color = "Political Party", title = "Partisan Differences in Mask Usage Across Opposing \nParty Districts") + 
+  labs(y = "", x = "", color = "Political Party", title = "Predicted Percent Masked Contacts") + 
   geom_errorbar(aes(ymin = emmean - SE, ymax = emmean + SE), width = 0.2, position = position_dodge(width = 0.35)) +
   theme_minimal() +
   theme(legend.position = "none",
@@ -175,6 +178,7 @@ mask_pred_plot <- ggplot(emm_masks, aes(x = political_party_to_CD, y = emmean, c
         panel.grid.major.y = element_line(color = "grey90", size = 0.5),
         axis.title.x = element_text(size = 18),
         axis.text.x = element_text(size = 15),
+        axis.text.y = element_text(size = 13),
         axis.title.y = element_text(size = 16),
         legend.title = element_text(size = 12),
         legend.text = element_text(size = 10)) +
@@ -189,32 +193,42 @@ rm(mask_pred_plot, cd_masked_contact_model)
 ```
 Vaccination
 ```{r}
-cd_vaccination_model <- lm(Vaccinated ~  log_rate_prev_12_01_20 + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + political_party_to_CD + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave, 
+cd_vaccination_model <- lm(Vaccinated ~ log_current_week_inc_rate + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + cityNY +`cityBay Area` + cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + political_party_to_CD, 
                               data = bics_zip_features,
                               weights = weight_pooled)
 
 print(summary(cd_vaccination_model))
 
-vaccination_pred_plot <- plot_model(
-  cd_vaccination_model,
-  colors = "black",
-  type = "pred",
-  auto.label = FALSE,
-  terms = c("political_party_to_CD[Democrat in Democratic led CD, Democrat in Republican led CD, Republican in Democratic led CD, Republican in Republican led CD]"),
-  title = "Partisan Differences in Vaccination Across Opposing \nParty Districts",
-  axis.title = c("", "Predicted Proportion Vaccinated")
-) +
-theme_minimal() +
-  theme(
-    legend.position = "none",
-    axis.text.y = element_text(size = 20), 
-    axis.title.y = element_text(size = 20), 
-    axis.text.x = element_text(size = 14), 
-    axis.title.x = element_text(size = 14),  
-    plot.title = element_text(size = 28, face = "bold"), 
-    plot.subtitle = element_text(size = 15)
-  ) +
-  geom_point(size = 5) 
+emm_vaccination <- emmeans(cd_vaccination_model, specs = "political_party_to_CD")
+emm_vaccination <- transform(summary(emm_vaccination))
+
+levels = c("Democrat in Democratic led CD","Democrat in Republican led CD","Republican in Democratic led CD","Republican in Republican led CD")
+
+emm_vaccination <- emm_vaccination %>% 
+  filter(political_party_to_CD %in% levels)
+
+
+emm_vaccination$political_party_to_CD <- factor(emm_vaccination$political_party_to_CD, levels = levels)
+
+vaccination_pred_plot <- ggplot(emm_vaccination, aes(x = political_party_to_CD, y = emmean, color = political_party_to_CD, shape = political_party_to_CD)) +
+  geom_point(position = position_dodge(width = 0.35), size = 5) +
+  scale_color_manual(name = "Political Party", values = c("blue", "purple", "magenta","red")) +
+  labs(y = "", x = "", color = "Political Party", title = "Probability of Vaccination") + 
+  geom_errorbar(aes(ymin = emmean - SE, ymax = emmean + SE), width = 0.2, position = position_dodge(width = 0.35)) +
+  theme_minimal() +
+  theme(legend.position = "none",
+        plot.title = element_text(size = 26),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.x = element_line(color = "grey70", size = 0.5),
+        panel.grid.major.y = element_line(color = "grey90", size = 0.5),
+        axis.title.x = element_text(size = 18),
+        axis.text.x = element_text(size = 15),
+        axis.text.y = element_text(size = 13),
+        axis.title.y = element_text(size = 16),
+        legend.title = element_text(size = 12),
+        legend.text = element_text(size = 10)) +
+  guides(shape = "none")+
+  scale_x_discrete(labels = c("Democrat in Democratic led CD" = "Democrat in \nDemocratic District", "Democrat in Republican led CD" = "Democrat in \nRepublican District", "Republican in Democratic led CD" = "Republican in \nDemocratic District", "Republican in Republican led CD" = "Republican in \nRepublican District"))
 
 ggsave("cd_vaccines_pooled.png", plot = vaccination_pred_plot, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Vaccines", width = 12, height = 8, units = "in")
 
