@@ -808,6 +808,10 @@ bics_zip_features <- bics_zip_features %>%
 hist(bics_zip_features$log_current_week_inc_rate, main="Histogram of Logged Previous Week Incidence Rate",
      xlab="Logged Previous Week Incidence Rate", breaks=50, col="grey")
 ```
+```{r}
+bics_zip_features$wave <- as.factor(bics_zip_features$wave)
+bics_zip_features$Vaccinated <- bics_zip_features$Vaccinated*100
+```
 
 ```{r}
 RD_df <- bics_zip_features[bics_zip_features$political_party %in% c("Republican", "Democrat"), ]
