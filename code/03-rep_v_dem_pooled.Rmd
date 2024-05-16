@@ -100,7 +100,7 @@ Now, let's take a look at number of non-household contacts
 ```{r}
 emm_options(rg.limit = 500000)
 
-rvd_contacts_model <- lm(num_cc_nonhh ~ log_prev_week_inc_rate + county_mask_mandate + Metro + male + educ_group + resp_yob + resp_hhsize + r_race + political_party + r_working + cityNY + `cityBay Area` + cityPhiladelphia + cityPhoenix + cityBoston + cityAtlanta + wave, 
+rvd_contacts_model <- lm(num_cc_nonhh ~ log_prev_week_inc_rate + county_mask_mandate + Metro + male + educ_group + resp_yob + resp_hhsize + r_race + political_party + r_working + cityNY + `cityBay Area` + cityPhiladelphia + cityPhoenix + cityBoston + cityAtlanta + wave + binary_concern_strong, 
                                    data = bics_zip_features, 
                                    weights = weight_pooled)
 print(summary(rvd_contacts_model))

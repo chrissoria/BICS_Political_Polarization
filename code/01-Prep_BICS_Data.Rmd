@@ -192,6 +192,11 @@ df <- df %>%
   mutate(binary_concern_strong = ifelse(covid19_reduceOK == "No, I would like to increase face-to-face interaction with others more than I am able to" & binary_concern_strong == 1, 0,
                                         ifelse(covid19_reduceOK == "No, I would like to reduce face-to-face interaction with others more than I am able to" & binary_concern_strong == 0, 1, binary_concern_strong)))
 
+df <- df %>%
+  mutate(strong_concern_inverse = ifelse(is.na(binary_concern_strong), NA,
+                                        ifelse(binary_concern_strong == 1, 0,
+                                               ifelse(binary_concern_strong == 0, 1, NA))))
+
 print(table(df$binary_concern_strong))
 ```
 manual merge = 27,937, already merged = 69,135
@@ -276,7 +281,7 @@ columns_to_keep <- c('ResponseId','StartDate','resp_yob','resp_sex','resp_hispan
                      'industry','health_insurance','interview_date','wave','agecat','city','covid19_vax','covid19_whynot_vax',
                      'Non_Weighted_Safety_Index','Weighted_Safety_Index','Norm_Masks_Used','educ_group','contact_reduction',
                      'binary_concern','binary_concern_strong','resp_educ','Contacts',
-                     'data_collected_dates','weight_pooled','weight_city','num_cc')
+                     'data_collected_dates','weight_pooled','weight_city','num_cc','strong_concern_inverse')
 
 df <- df[columns_to_keep]
 
@@ -374,9 +379,6 @@ bics_zip_features <- bics_zip_features %>%
                                         paste(political_party, "in", CONGRESSPERSON_PARTY, "led CD"), 
                                         NA_character_))
 
-# Print the specified columns of the updated DataFrame
-print(bics_zip_features[, c("political_party", "CONGRESSPERSON_PARTY", "political_party_to_CD")])
-
 bics_zip_features <- bics_zip_features %>%
   mutate(political_party_to_CD = ifelse(political_party == "Prefer not to answer", NA_character_, political_party_to_CD))
 
@@ -386,6 +388,18 @@ bics_zip_features <- bics_zip_features %>%
 print(table(bics_zip_features$CONGRESSPERSON_PARTY, useNA = "always"))
 print(table(bics_zip_features$political_party_to_CD, useNA = "always"))
 ```
+creating a variable that accounts for ideology
+```{r}
+bics_zip_features <- bics_zip_features %>%
+  mutate(political_view_to_CD = ifelse(!is.na(CONGRESSPERSON_PARTY), 
+                                        paste(political_view, "in", CONGRESSPERSON_PARTY, "led CD"), 
+                                        NA_character_))
+
+print(table(bics_zip_features$CONGRESSPERSON_PARTY, useNA = "always"))
+print(table(bics_zip_features$political_view_to_CD, useNA = "always"))
+```
+
+
 generating binary variables for whether someone is in an opposing party CD (to observe potential general effects), vaccinated binaries, and Independent
 ```{r}
 bics_zip_features <- bics_zip_features %>%
