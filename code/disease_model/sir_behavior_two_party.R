@@ -1,48 +1,68 @@
-# adapted from Harris et al.
+# adapted from Harris et al. (2023) and Smaldino et al. (2021)
 # https://github.com/mjharris95/divided-disease/blob/main/aware-eqs.R
 # https://www.cambridge.org/core/journals/evolutionary-human-sciences/article/social-divisions-and-risk-perception-drive-divergent-epidemics-and-large-later-waves/71613CAF7D03C9F20A8864A59B9BF311#article
+# https://www.cambridge.org/core/journals/evolutionary-human-sciences/article/coupled-dynamics-of-behaviour-and-disease-contagion-among-antagonistic-groups/3036BBFB4EC35E795C689A3008AE918B
 
 library(deSolve)
 library(tidyverse)
 library(reshape2)
 
 # two group SIR model (A and B); each compartment is split into "Protected (P)" and "Unprotected (U)"
+# the way this is setup currently; it is simplest to equate protective behavior with mask usage; BUT the mechanics is the same as 
+#    reducing contacts since its just a multiplier on the transmission term (TODO: need to think about what it means for homophily)
 # both groups can adopt protective behavior (i.e. mask usage) in two ways: 
 #     1) in response to deaths over a specified time window; 2) in response to the proportion of "protected" individuals in the population
-#     at the moment these are both linear relationships, i.e. individuals are more likely to adopt protective behavior if there are more deaths and there are a greater proportion of protected individuals in the population
+#     at the moment these are both linear relationships, i.e. individuals are more likely to adopt protective behavior if there are more deaths 
+#     and there are a greater proportion of protected individuals in the population; TODO: we should think about other functional forms
 # protective behavior is protective of both transmission and infection
 # groups can differ in their rate of contact and their propensity to adopt protective behaviors
 # fraction of the population in each group can vary
-# preference for homophily (degree to which members of a group mix within group versus outside their group) can vary
+# homophily (degree to which members of a group mix within group versus outside their group) can vary; 
+#    NOTE: we currently set the proportion of contacts group A wants to have within their own group; this determines the proportion of contacts
+#    the group B members have with group A since total contacts members of A have with members of B must equal total contacts members of B have with A;
+#    so group B's assortativeness is a function of group B's size in the population, the number of contacts B has, and group A's preference
+# TO DISCUSS: this model does not yet include vaccination or age-structure
 
 
-sir_two_group_pu <- function(c = NA, c_a = 3, c_b = 3, 
-                          trans_p = 0.05, rho=1/10, mu = 0.01, 
-                          h_a=.5, kappa=0.03, phi = 0,
-                          I0_a=1, I0_b=1, N0 = 10000000, frac_a = 0.5, time = 500,
-                          ell = 1, theta = NA, theta_a = 100, theta_b  = 100, 
-                          epsilon = NA, epsilon_a = 0.5, epsilon_b = 0.5,
-                          omega = NA, omega_a = 0.1, omega_b = 0.1,
-                          get_params=FALSE) {
+sir_two_group_pu <- function(c = NA, # average number of contacts per day (specify only if its the same for both groups, otherwise NA)
+                             c_a = 3, c_b = 3, # average number of contacts per day by group 
+                             trans_p = 0.05, # probability of transmission given contact
+                             rho=1/10,  # 1 / infectious period  or recovery rate
+                             mu = 0.01, # probability of dying following infection
+                             h_a=.5, # proportion of group A's total contact with members of their own group (bounded by population size and total contacts in group B)
+                             kappa=0.03, # reduction in probability of transmission given contact resulting from protective behavior
+                             phi = 0, # waning of protective behavior
+                             I0_a=1, I0_b=1, #intial infected in each group
+                             N0 = 10000000, # population size
+                             frac_a = 0.5, # fraction of population in group A
+                             time = 500, # time steps for simulation
+                             ell = 1, # time window for considering deaths that influence adoption of protective behavior
+                             theta = NA, # responsiveness to deaths for adopting protective behavior (more deaths --> greater adoption of protective behavior)
+                             theta_a = 100, theta_b  = 100, 
+                             epsilon = NA, #measure of assortativeness in influence (i.e. are people equally aware and influenced by deaths/number of protected individuals in their own group versus in the out group)
+                             epsilon_a = 0.5, epsilon_b = 0.5,
+                             omega = NA, # responsiveness to proportion of protected individuals for adopting protective behavior (higher proportion of population who have adopted protective behavior --> greater adoption)
+                             omega_a = 0.1, omega_b = 0.1,
+                             get_params=FALSE) {
+  # set following parameters to be the same for both groups unless specified otherwise 
   
-  
-  if(!is.na(epsilon)){
-    epsilon_a<-epsilon
+  if(!is.na(epsilon)){  
+    epsilon_a<-epsilon  
     epsilon_b<-epsilon
   }
   
-  if(!is.na(theta)){
+  if(!is.na(theta)){   
     theta_a<-theta
     theta_b<-theta
   }
   
-  if(!is.na(omega)){
+  if(!is.na(omega)){  
     omega_a<-omega
     omega_b<-omega
   }
   
   
-  if(!is.na(c)){
+  if(!is.na(c)){  
     c_a<-c
     c_b<-c
   }
@@ -131,11 +151,17 @@ sir_two_group_pu <- function(c = NA, c_a = 3, c_b = 3,
         lag<-lagvalue(t-ell)
       }
       
-      dSUa <- -SUa*trans_p*(c_aa*(IUa/N_a + kappa*IPa/N_a) + c_ba*(IUb/N_b + kappa*IPb/N_b)) + 
-        phi * SPa  - 
-        theta_a * SUa * (epsilon_a * ((DUa+DPa-lag[which(names(state) == "DUa")]-lag[which(names(state) == "DPa")])/N_a) + 
+      # for the transitions there are four processes that are currently modeled:
+      # 1: transmission process (infection, recovery/death)
+      # 2: adoption of protective behavior in response to deaths
+      # 3: adoption of protective behavior in reponse to the relative size of the protected population
+      # 4: waning of protective behavior
+      
+      dSUa <- -SUa*trans_p*(c_aa*(IUa/N_a + kappa*IPa/N_a) + c_ba*(IUb/N_b + kappa*IPb/N_b)) + #transmission process
+        phi * SPa  - #waning of protective behavior
+        theta_a * SUa * (epsilon_a * ((DUa+DPa-lag[which(names(state) == "DUa")]-lag[which(names(state) == "DPa")])/N_a) + #adoption of protective behavior in response to deaths
                            (1-epsilon_a) * ((DUb+DPb-lag[which(names(state) == "DUb")]-lag[which(names(state) == "DPb")])/N_b) ) -
-        omega_a * SUa * (epsilon_a *((SPa + IPa + RPa)/N_a) + (1-epsilon_a)*((SPb + IPb + RPb)/N_b))
+        omega_a * SUa * (epsilon_a *((SPa + IPa + RPa)/N_a) + (1-epsilon_a)*((SPb + IPb + RPb)/N_b)) #adoption of protective behavior in response to proportion of population that has already adopted protective behavior
       
  
       dSPa <- -SPa*kappa*trans_p*(c_aa*(IUa/N_a + kappa*IPa/N_a) + c_ba*(IUb/N_b + kappa*IPb/N_b)) - 
