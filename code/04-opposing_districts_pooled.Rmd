@@ -9,6 +9,8 @@ library(sjPlot)
 library(MASS)
 library(tidyverse)
 library(cowplot)
+library(emmeans)
+emm_options(rg.limit = 250000)
 ```
 
 
@@ -55,7 +57,6 @@ cd_concern_model <- lm(binary_concern_strong ~  log_current_week_inc_rate + coun
 
 print(summary(cd_concern_model))
 
-emm_options(rg.limit = 130000)
 emm_concern <- emmeans(cd_concern_model, specs = "political_party_to_CD")
 emm_concern <- transform(summary(emm_concern))
 
@@ -68,9 +69,9 @@ emm_concern <- emm_concern %>%
 emm_concern$political_party_to_CD <- factor(emm_concern$political_party_to_CD, levels = levels)
 
 cd_concern_plot <- ggplot(emm_concern, aes(x = political_party_to_CD, y = emmean, color = political_party_to_CD, shape = political_party_to_CD)) +
-  geom_point(position = position_dodge(width = 0.35), size = 4) +
+  geom_point(position = position_dodge(width = 0.35), size = 5) +
   scale_color_manual(name = "Political Party", values = c("blue", "purple", "magenta","red")) +
-  labs(y = "Probability of Concern", x = "", color = "Political Party", title = "Partisan Differences in Concern about Spread of the Virus \nAcross Opposing Party Districts") +
+  labs(y = "", x = "", color = "Political Party", title = "Probability of Concern") +
   geom_errorbar(aes(ymin = emmean - SE, ymax = emmean + SE), width = 0.2, position = position_dodge(width = 0.35)) +
   theme_minimal() +
   theme(legend.position = "none",
@@ -80,6 +81,7 @@ cd_concern_plot <- ggplot(emm_concern, aes(x = political_party_to_CD, y = emmean
         panel.grid.major.y = element_line(color = "grey90", size = 0.5),
         axis.title.x = element_text(size = 18),
         axis.text.x = element_text(size = 15),
+        axis.text.y = element_text(size = 13),
         axis.title.y = element_text(size = 16),
         legend.title = element_text(size = 12),
         legend.text = element_text(size = 10)) +
@@ -96,125 +98,534 @@ rm(cd_concern_model, cd_concern_plot)
 How do partisans change their behavior depending on congressional district context?
 This difference becomes a little 
 ```{r}
+emm_options(rg.limit = 5000000)
 filtered_df <- bics_zip_features %>% 
   filter(!is.na(political_party) & !is.na(CONGRESSPERSON_PARTY) & political_party != "Prefer not to answer")
 
 print(table(filtered_df$political_party_to_CD))
 print(table(filtered_df$politcal_party))
 
-cd_contact_model <- glm.nb(num_cc_nonhh ~ log_current_week_inc_rate + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + cityNY +`cityBay Area` + cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + political_party_to_CD, 
-                           data = bics_zip_features,
+cd_contact_model <- lm(num_cc_nonhh ~ log_prev_week_inc_rate + county_mask_mandate + Metro + male + educ_group + resp_yob + resp_hhsize + r_race + r_working + cityNY + `cityBay Area` + cityPhiladelphia + cityPhoenix + cityBoston + cityAtlanta + wave + political_party_to_CD, 
+                           data = filtered_df,
                            weights = weight_pooled)
 
 print(summary(cd_contact_model))
 
-emm_contact<- emmeans(cd_contact_model, specs = "political_party_to_CD")
+emm_contact<- emmeans(cd_contact_model, specs = "political_party_to_CD", 
+                        at = list(log_current_week_inc_rate = weighted.mean(bics_zip_features$log_current_week_inc_rate, w = bics_zip_features$weight_pooled, na.rm = TRUE),
+                                  resp_yob = weighted.mean(bics_zip_features$resp_yob, w = bics_zip_features$weight_pooled, na.rm = TRUE),
+                                  resp_hhsize = weighted.mean(bics_zip_features$resp_hhsize, w = bics_zip_features$weight_pooled, na.rm = TRUE),
+                                  county_mask_mandate = "Strict",
+                                  Metro = 1,
+                                  Male = 1,
+                                  r_race = "White",
+                                  wave = "2",
+                                  cityNY = 0,
+                                  `cityBay Area` = 0,
+                                  cityPhiladelphia = 0,
+                                  cityPhoenix = 0,
+                                  cityBoston = 0,
+                                  cityAtlanta = 0))
+
 emm_contact <- transform(summary(emm_contact))
+emm_contact$controls <- "controls"
+print(emm_contact)
+
+cd_contact_model_raw <- lm(num_cc_nonhh ~ cityNY + `cityBay Area` + cityPhiladelphia + cityPhoenix + cityBoston + cityAtlanta + wave + political_party_to_CD, 
+                           data = filtered_df,
+                           weights = weight_pooled)
+
+print(summary(cd_contact_model))
+
+emm_contact_raw <- emmeans(cd_contact_model_raw, specs = "political_party_to_CD", 
+                        at = list(log_current_week_inc_rate = weighted.mean(bics_zip_features$log_current_week_inc_rate, w = bics_zip_features$weight_pooled, na.rm = TRUE),
+                                  resp_yob = weighted.mean(bics_zip_features$resp_yob, w = bics_zip_features$weight_pooled, na.rm = TRUE),
+                                  resp_hhsize = weighted.mean(bics_zip_features$resp_hhsize, w = bics_zip_features$weight_pooled, na.rm = TRUE),
+                                  county_mask_mandate = "Strict",
+                                  Metro = 1,
+                                  Male = 1,
+                                  r_race = "White",
+                                  wave = "2",
+                                  cityNY = 0,
+                                  `cityBay Area` = 0,
+                                  cityPhiladelphia = 0,
+                                  cityPhoenix = 0,
+                                  cityBoston = 0,
+                                  cityAtlanta = 0))
+
+emm_contact_raw <- transform(summary(emm_contact_raw))
+emm_contact_raw$controls <- "baseline"
 
 levels = c("Democrat in Democratic led CD","Democrat in Republican led CD","Republican in Democratic led CD","Republican in Republican led CD")
 
 emm_contact <- emm_contact %>% 
   filter(political_party_to_CD %in% levels)
 
+emm_contact_raw <- emm_contact_raw %>% 
+  filter(political_party_to_CD %in% levels)
 
 emm_contact$political_party_to_CD <- factor(emm_contact$political_party_to_CD, levels = levels)
+emm_contact_raw$political_party_to_CD <- factor(emm_contact_raw$political_party_to_CD, levels = levels)
 
-cd_contact_plot <- ggplot(emm_contact, aes(x = political_party_to_CD, y = emmean, color = political_party_to_CD, shape = political_party_to_CD)) +
-  geom_point(position = position_dodge(width = 0.35), size = 4) +
+all_emms <- rbind(emm_contact, emm_contact_raw)
+
+cd_contact_plot <- ggplot(all_emms, aes(x = political_party_to_CD, y = emmean, color = political_party_to_CD, group = interaction(political_party_to_CD, controls))) +
+  geom_point(aes(shape = controls, size = controls), position = position_dodge(width = dodge_width)) +
   scale_color_manual(name = "Political Party", values = c("blue", "purple", "magenta","red")) +
-  labs(y = "Predicted Contacts", x = "", color = "Political Party", title = "Partisan Differences in Non-Household Contacts Across \nOpposing Party Districts") + 
-  geom_errorbar(aes(ymin = emmean - SE, ymax = emmean + SE), width = 0.2, position = position_dodge(width = 0.35)) +
+  scale_shape_manual(name = NULL, values = c("baseline" = 1, "controls" = 16), labels = c("unadjusted", "adjusted")) +
+  scale_size_manual(values = c("baseline" = 6, "controls" = 6), labels = c("unadjusted", "adjusted")) +
+  labs(y = "", x = "", color = "Political Party", title = "predicted number of contacts") +
+  geom_errorbar(aes(ymin = emmean - SE, ymax = emmean + SE), width = 0.2, position = position_dodge(width = dodge_width)) +
   theme_minimal() +
   theme(legend.position = "none",
-        plot.title = element_text(size = 26),
+        plot.title = element_text(size = 18),
         panel.grid.minor.y = element_blank(),
         panel.grid.major.x = element_line(color = "grey70", size = 0.5),
         panel.grid.major.y = element_line(color = "grey90", size = 0.5),
         axis.title.x = element_text(size = 18),
-        axis.text.x = element_text(size = 15),
+        axis.text.x = element_text(size = 20),
+        axis.text.y = element_text(size = 22),
         axis.title.y = element_text(size = 16),
         legend.title = element_text(size = 12),
         legend.text = element_text(size = 10)) +
-  guides(shape = "none")+
-  scale_x_discrete(labels = c("Democrat in Democratic led CD" = "Democrat in \nDemocratic District", "Democrat in Republican led CD" = "Democrat in \nRepublican District", "Republican in Democratic led CD" = "Republican in \nDemocratic District", "Republican in Republican led CD" = "Republican in \nRepublican District"))
-
-ggsave("cd_contact_pooled.png", plot = cd_contact_plot, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Contacts", width = 12, height = 8, units = "in")
+  scale_x_discrete(labels = c("Democrat in Democratic led CD" = "Democrat in \nDemocratic District", 
+                              "Democrat in Republican led CD" = "Democrat in \nRepublican District", 
+                              "Republican in Democratic led CD" = "Republican in \nDemocratic District", 
+                              "Republican in Republican led CD" = "Republican in \nRepublican District"))
 
 cd_contact_plot
 
+ggsave("cd_contact_pooled.png", plot = cd_contact_plot, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Contacts", width = 12, height = 8, units = "in")
+
 rm(cd_contact_model, cd_contact_plot, filtered_df)
 ```
-What about mask usage?
+
 ```{r}
-cd_masked_contact_model <- lm(Norm_Masks_Used ~ log_current_week_inc_rate + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + cityNY +`cityBay Area` + cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + political_party_to_CD, 
-                           data = bics_zip_features,
+filtered_df <- bics_zip_features %>% 
+  filter(!is.na(political_party) & !is.na(CONGRESSPERSON_PARTY) & political_party != "Prefer not to answer")
+
+cd_masked_contact_model <- lm(Norm_Masks_Used ~ log_prev_week_inc_rate + county_mask_mandate + Metro + male + educ_group + resp_yob + resp_hhsize + r_race + r_working + cityNY + `cityBay Area` + cityPhiladelphia + cityPhoenix + cityBoston + cityAtlanta + wave + political_party_to_CD, 
+                           data = filtered_df,
                            weights = weight_pooled)
 
 print(summary(cd_masked_contact_model))
 
-emm_masks <- emmeans(cd_masked_contact_model, specs = "political_party_to_CD")
-emm_masks <- transform(summary(emm_masks))
+emm_masked_contact<- emmeans(cd_masked_contact_model, specs = "political_party_to_CD", 
+                        at = list(log_current_week_inc_rate = weighted.mean(bics_zip_features$log_current_week_inc_rate, w = bics_zip_features$weight_pooled, na.rm = TRUE),
+                                  resp_yob = weighted.mean(bics_zip_features$resp_yob, w = bics_zip_features$weight_pooled, na.rm = TRUE),
+                                  resp_hhsize = weighted.mean(bics_zip_features$resp_hhsize, w = bics_zip_features$weight_pooled, na.rm = TRUE),
+                                  county_mask_mandate = "Strict",
+                                  Metro = 1,
+                                  Male = 1,
+                                  r_race = "White",
+                                  wave = "2",
+                                  cityNY = 0,
+                                  `cityBay Area` = 0,
+                                  cityPhiladelphia = 0,
+                                  cityPhoenix = 0,
+                                  cityBoston = 0,
+                                  cityAtlanta = 0))
+
+emm_masked_contact <- transform(summary(emm_masked_contact))
+emm_masked_contact$controls <- "controls"
+print(emm_masked_contact)
+
+cd_masked_contact_model_raw <- lm(Norm_Masks_Used ~ cityNY + `cityBay Area` + cityPhiladelphia + cityPhoenix + cityBoston + cityAtlanta + wave + political_party_to_CD, 
+                           data = filtered_df,
+                           weights = weight_pooled)
+
+print(summary(cd_masked_contact_model))
+
+emm_masked_contact_raw <- emmeans(cd_masked_contact_model_raw, specs = "political_party_to_CD", 
+                        at = list(log_current_week_inc_rate = weighted.mean(bics_zip_features$log_current_week_inc_rate, w = bics_zip_features$weight_pooled, na.rm = TRUE),
+                                  resp_yob = weighted.mean(bics_zip_features$resp_yob, w = bics_zip_features$weight_pooled, na.rm = TRUE),
+                                  resp_hhsize = weighted.mean(bics_zip_features$resp_hhsize, w = bics_zip_features$weight_pooled, na.rm = TRUE),
+                                  county_mask_mandate = "Strict",
+                                  Metro = 1,
+                                  Male = 1,
+                                  r_race = "White",
+                                  wave = "2",
+                                  cityNY = 0,
+                                  `cityBay Area` = 0,
+                                  cityPhiladelphia = 0,
+                                  cityPhoenix = 0,
+                                  cityBoston = 0,
+                                  cityAtlanta = 0))
+
+emm_masked_contact_raw <- transform(summary(emm_masked_contact_raw))
+emm_masked_contact_raw$controls <- "baseline"
 
 levels = c("Democrat in Democratic led CD","Democrat in Republican led CD","Republican in Democratic led CD","Republican in Republican led CD")
 
-emm_masks <- emm_masks %>% 
+emm_masked_contact <- emm_masked_contact %>% 
   filter(political_party_to_CD %in% levels)
 
-emm_masks$political_party_to_CD <- factor(emm_masks$political_party_to_CD, levels = levels)
+emm_masked_contact_raw <- emm_masked_contact_raw %>% 
+  filter(political_party_to_CD %in% levels)
 
-mask_pred_plot <- ggplot(emm_masks, aes(x = political_party_to_CD, y = emmean, color = political_party_to_CD, shape = political_party_to_CD)) +
-  geom_point(position = position_dodge(width = 0.35), size = 4) +
+emm_masked_contact$political_party_to_CD <- factor(emm_masked_contact$political_party_to_CD, levels = levels)
+emm_masked_contact_raw$political_party_to_CD <- factor(emm_masked_contact_raw$political_party_to_CD, levels = levels)
+
+all_emms <- rbind(emm_masked_contact, emm_masked_contact_raw)
+
+cd_masked_contact_plot <- ggplot(all_emms, aes(x = political_party_to_CD, y = emmean, color = political_party_to_CD, group = interaction(political_party_to_CD, controls))) +
+  geom_point(aes(shape = controls, size = controls), position = position_dodge(width = dodge_width)) +
   scale_color_manual(name = "Political Party", values = c("blue", "purple", "magenta","red")) +
-  labs(y = "Predicted Percent Masked Contacts", x = "", color = "Political Party", title = "Partisan Differences in Mask Usage Across Opposing \nParty Districts") + 
-  geom_errorbar(aes(ymin = emmean - SE, ymax = emmean + SE), width = 0.2, position = position_dodge(width = 0.35)) +
+  scale_shape_manual(name = NULL, values = c("baseline" = 1, "controls" = 16), labels = c("unadjusted", "adjusted")) +
+  scale_size_manual(values = c("baseline" = 6, "controls" = 6), labels = c("unadjusted", "adjusted")) +
+  labs(y = "", x = "", color = "Political Party", title = "predicted percentage of masked contacts") +
+  geom_errorbar(aes(ymin = emmean - SE, ymax = emmean + SE), width = 0.2, position = position_dodge(width = dodge_width)) +
   theme_minimal() +
   theme(legend.position = "none",
-        plot.title = element_text(size = 26),
+        plot.title = element_text(size = 18),
         panel.grid.minor.y = element_blank(),
         panel.grid.major.x = element_line(color = "grey70", size = 0.5),
         panel.grid.major.y = element_line(color = "grey90", size = 0.5),
         axis.title.x = element_text(size = 18),
-        axis.text.x = element_text(size = 15),
+        axis.text.x = element_text(size = 20),
+        axis.text.y = element_text(size = 22),
         axis.title.y = element_text(size = 16),
         legend.title = element_text(size = 12),
         legend.text = element_text(size = 10)) +
-  guides(shape = "none")+
-  scale_x_discrete(labels = c("Democrat in Democratic led CD" = "Democrat in \nDemocratic District", "Democrat in Republican led CD" = "Democrat in \nRepublican District", "Republican in Democratic led CD" = "Republican in \nDemocratic District", "Republican in Republican led CD" = "Republican in \nRepublican District"))
+  scale_x_discrete(labels = c("Democrat in Democratic led CD" = "Democrat in \nDemocratic District", 
+                              "Democrat in Republican led CD" = "Democrat in \nRepublican District", 
+                              "Republican in Democratic led CD" = "Republican in \nDemocratic District", 
+                              "Republican in Republican led CD" = "Republican in \nRepublican District"))
 
-ggsave("cd_masks_pooled.png", plot = mask_pred_plot, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Masks", width = 12, height = 8, units = "in")
+cd_masked_contact_plot
 
-mask_pred_plot
-
-rm(mask_pred_plot, cd_masked_contact_model)
+ggsave("cd_masks_pooled.png", plot = cd_masked_contact_plot, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Masks", width = 12, height = 8, units = "in")
 ```
+The question is whether this is just a result of extremists within the parties, or whether it's the case that moderates are just more likely to live in the counties where they are political minorities
+```{r}
+filtered_df <- bics_zip_features %>% 
+  filter(!is.na(political_party) & !is.na(CONGRESSPERSON_PARTY) & political_party != "Prefer not to answer")
+
+cd_masked_contact_model <- lm(Norm_Masks_Used ~ log_prev_week_inc_rate + county_mask_mandate + Metro + male + educ_group + resp_yob + resp_hhsize + r_race + r_working + cityNY + `cityBay Area` + cityPhiladelphia + cityPhoenix + cityBoston + cityAtlanta + wave + political_party_to_CD, 
+                           data = filtered_df,
+                           weights = weight_pooled)
+
+print(summary(cd_masked_contact_model))
+
+emm_masked_contact<- emmeans(cd_masked_contact_model, specs = "political_party_to_CD", 
+                        at = list(log_current_week_inc_rate = weighted.mean(bics_zip_features$log_current_week_inc_rate, w = bics_zip_features$weight_pooled, na.rm = TRUE),
+                                  resp_yob = weighted.mean(bics_zip_features$resp_yob, w = bics_zip_features$weight_pooled, na.rm = TRUE),
+                                  resp_hhsize = weighted.mean(bics_zip_features$resp_hhsize, w = bics_zip_features$weight_pooled, na.rm = TRUE),
+                                  county_mask_mandate = "Strict",
+                                  Metro = 1,
+                                  Male = 1,
+                                  r_race = "White",
+                                  wave = "2",
+                                  cityNY = 0,
+                                  `cityBay Area` = 0,
+                                  cityPhiladelphia = 0,
+                                  cityPhoenix = 0,
+                                  cityBoston = 0,
+                                  cityAtlanta = 0))
+
+emm_masked_contact <- transform(summary(emm_masked_contact))
+emm_masked_contact$controls <- "controls"
+
+emm_masked_contact <- emm_masked_contact %>% 
+  filter(political_party_to_CD %in% levels)
+
+cd_masked_contact_model_ideology <- lm(Norm_Masks_Used ~ log_prev_week_inc_rate + county_mask_mandate + Metro + male + educ_group + resp_yob + resp_hhsize + r_race + r_working + cityNY + `cityBay Area` + cityPhiladelphia + cityPhoenix + cityBoston + cityAtlanta + wave + political_party_to_CD + extreme_liberal + extreme_conservative, 
+                           data = filtered_df,
+                           weights = weight_pooled)
+
+print(summary(cd_masked_contact_model_ideology))
+
+emm_masked_contact_ideology <- emmeans(cd_masked_contact_model_ideology, specs = "political_party_to_CD", 
+                        at = list(log_current_week_inc_rate = weighted.mean(bics_zip_features$log_current_week_inc_rate, w = bics_zip_features$weight_pooled, na.rm = TRUE),
+                                  resp_yob = weighted.mean(bics_zip_features$resp_yob, w = bics_zip_features$weight_pooled, na.rm = TRUE),
+                                  resp_hhsize = weighted.mean(bics_zip_features$resp_hhsize, w = bics_zip_features$weight_pooled, na.rm = TRUE),
+                                  county_mask_mandate = "Strict",
+                                  Metro = 1,
+                                  Male = 1,
+                                  r_race = "White",
+                                  wave = "2",
+                                  cityNY = 0,
+                                  `cityBay Area` = 0,
+                                  cityPhiladelphia = 0,
+                                  cityPhoenix = 0,
+                                  cityBoston = 0,
+                                  cityAtlanta = 0))
+
+
+emm_masked_contact_ideology <- transform(summary(emm_masked_contact_raw))
+emm_masked_contact_ideology$controls <- "ideology"
+
+emm_masked_contact_ideology <- emm_masked_contact_ideology %>% 
+  filter(political_party_to_CD %in% levels)
+
+emm_masked_contact_ideology$political_party_to_CD <- factor(emm_masked_contact_ideology$political_party_to_CD, levels = levels)
+
+all_emms <- rbind(emm_masked_contact, emm_masked_contact_ideology)
+
+
+cd_masked_contact_plot_ideology <- ggplot(all_emms, aes(x = political_party_to_CD, y = emmean, color = political_party_to_CD, group = interaction(political_party_to_CD, controls))) +
+  geom_point(aes(shape = controls, size = controls), position = position_dodge(width = dodge_width)) +
+  scale_color_manual(name = "Political Party", values = c("blue", "purple", "magenta","red")) +
+  scale_shape_manual(name = NULL, values = c("ideology" = 1, "controls" = 16), labels = c("without ideology", "with ideology")) +
+  scale_size_manual(values = c("ideology" = 6, "controls" = 6), labels = c("without ideology", "with ideology")) +
+  labs(y = "", x = "", color = "Political Party", title = "predicted percentage of masked contacts") +
+  geom_errorbar(aes(ymin = emmean - SE, ymax = emmean + SE), width = 0.2, position = position_dodge(width = dodge_width)) +
+  theme_minimal() +
+  theme(legend.position = "none",
+        plot.title = element_text(size = 18),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.x = element_line(color = "grey70", size = 0.5),
+        panel.grid.major.y = element_line(color = "grey90", size = 0.5),
+        axis.title.x = element_text(size = 18),
+        axis.text.x = element_text(size = 20),
+        axis.text.y = element_text(size = 22),
+        axis.title.y = element_text(size = 16),
+        legend.title = element_text(size = 12),
+        legend.text = element_text(size = 10)) +
+  scale_x_discrete(labels = c("Democrat in Democratic led CD" = "Democrat in \nDemocratic District", 
+                              "Democrat in Republican led CD" = "Democrat in \nRepublican District", 
+                              "Republican in Democratic led CD" = "Republican in \nDemocratic District", 
+                              "Republican in Republican led CD" = "Republican in \nRepublican District"))
+
+ggsave("cd_masks_pooled_ideology.png", plot = cd_masked_contact_plot_ideology, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Masks", width = 12, height = 8, units = "in")
+
+cd_masked_contact_plot_ideology
+
+rm(cd_masked_contact_model_ideology,emm_masked_contact, emm_masked_contact_ideology, cd_masked_contact_plot_ideology, all_emms)
+```
+Another way to plot this is to look at political ideology within CD context
+```{r}
+filtered_df <- bics_zip_features %>% 
+  filter(!is.na(political_party) & !is.na(CONGRESSPERSON_PARTY) & political_party != "Prefer not to answer")
+
+cd_masked_contact_model <- lm(Norm_Masks_Used ~ log_prev_week_inc_rate + county_mask_mandate + Metro + male + educ_group + resp_yob + resp_hhsize + r_race + r_working + cityNY + `cityBay Area` + cityPhiladelphia + cityPhoenix + cityBoston + cityAtlanta + wave + political_view_to_CD, 
+                           data = filtered_df,
+                           weights = weight_pooled)
+
+print(summary(cd_masked_contact_model))
+
+emm_masked_contact<- emmeans(cd_masked_contact_model, specs = "political_view_to_CD", 
+                        at = list(log_current_week_inc_rate = weighted.mean(bics_zip_features$log_current_week_inc_rate, w = bics_zip_features$weight_pooled, na.rm = TRUE),
+                                  resp_yob = weighted.mean(bics_zip_features$resp_yob, w = bics_zip_features$weight_pooled, na.rm = TRUE),
+                                  resp_hhsize = weighted.mean(bics_zip_features$resp_hhsize, w = bics_zip_features$weight_pooled, na.rm = TRUE),
+                                  county_mask_mandate = "Strict",
+                                  Metro = 1,
+                                  Male = 1,
+                                  r_race = "White",
+                                  wave = "2",
+                                  cityNY = 0,
+                                  `cityBay Area` = 0,
+                                  cityPhiladelphia = 0,
+                                  cityPhoenix = 0,
+                                  cityBoston = 0,
+                                  cityAtlanta = 0))
+
+emm_masked_contact <- transform(summary(emm_masked_contact))
+emm_masked_contact$controls <- "controls"
+print(emm_masked_contact)
+
+cd_masked_contact_model_raw <- lm(Norm_Masks_Used ~ cityNY + `cityBay Area` + cityPhiladelphia + cityPhoenix + cityBoston + cityAtlanta + wave + political_view_to_CD, 
+                           data = filtered_df,
+                           weights = weight_pooled)
+
+print(summary(cd_masked_contact_model))
+
+emm_masked_contact_raw <- emmeans(cd_masked_contact_model_raw, specs = "political_view_to_CD", 
+                        at = list(log_current_week_inc_rate = weighted.mean(bics_zip_features$log_current_week_inc_rate, w = bics_zip_features$weight_pooled, na.rm = TRUE),
+                                  resp_yob = weighted.mean(bics_zip_features$resp_yob, w = bics_zip_features$weight_pooled, na.rm = TRUE),
+                                  resp_hhsize = weighted.mean(bics_zip_features$resp_hhsize, w = bics_zip_features$weight_pooled, na.rm = TRUE),
+                                  county_mask_mandate = "Strict",
+                                  Metro = 1,
+                                  Male = 1,
+                                  r_race = "White",
+                                  wave = "2",
+                                  cityNY = 0,
+                                  `cityBay Area` = 0,
+                                  cityPhiladelphia = 0,
+                                  cityPhoenix = 0,
+                                  cityBoston = 0,
+                                  cityAtlanta = 0))
+
+emm_masked_contact_raw <- transform(summary(emm_masked_contact_raw))
+emm_masked_contact_raw$controls <- "baseline"
+
+levels = c("Extremely liberal in Democratic led CD",
+           "Moderate in Democratic led CD",
+           "Extremely conservative in Democratic led CD",
+           "Extremely liberal in Republican led CD",
+           "Moderate in Republican led CD",
+           "Extremely conservative in Republican led CD")
+
+emm_masked_contact <- emm_masked_contact %>% 
+  filter(political_view_to_CD %in% levels)
+
+emm_masked_contact_raw <- emm_masked_contact_raw %>% 
+  filter(political_view_to_CD %in% levels)
+
+emm_masked_contact$political_party_to_CD <- factor(emm_masked_contact$political_view_to_CD, levels = levels)
+emm_masked_contact_raw$political_party_to_CD <- factor(emm_masked_contact_raw$political_view_to_CD, levels = levels)
+
+all_emms <- rbind(emm_masked_contact, emm_masked_contact_raw)
+
+cd_masked_contact_plot_ideology_pure <- ggplot(all_emms, aes(x = political_view_to_CD, y = emmean, color = political_view_to_CD, group = interaction(political_party_to_CD, controls))) +
+  geom_point(aes(shape = controls, size = controls), position = position_dodge(width = dodge_width)) +
+  scale_color_manual(name = "Political Party", values = c("blue", "purple", "magenta","red","white","black")) +
+  scale_shape_manual(name = NULL, values = c("baseline" = 1, "controls" = 16), labels = c("unadjusted", "adjusted")) +
+  scale_size_manual(values = c("baseline" = 6, "controls" = 6), labels = c("unadjusted", "adjusted")) +
+  labs(y = "", x = "", color = "Political Party", title = "predicted percentage of masked contacts") +
+  geom_errorbar(aes(ymin = emmean - SE, ymax = emmean + SE), width = 0.2, position = position_dodge(width = dodge_width)) +
+  theme_minimal() +
+  theme(legend.position = "none",
+        plot.title = element_text(size = 18),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.x = element_line(color = "grey70", size = 0.5),
+        panel.grid.major.y = element_line(color = "grey90", size = 0.5),
+        axis.title.x = element_text(size = 18),
+        axis.text.x = element_text(size = 20),
+        axis.text.y = element_text(size = 22),
+        axis.title.y = element_text(size = 16),
+        legend.title = element_text(size = 12),
+        legend.text = element_text(size = 10)) +
+  scale_x_discrete(labels = c("Democrat in Democratic led CD" = "Democrat in \nDemocratic District", 
+                              "Democrat in Republican led CD" = "Democrat in \nRepublican District", 
+                              "Republican in Democratic led CD" = "Republican in \nDemocratic District", 
+                              "Republican in Republican led CD" = "Republican in \nRepublican District"))
+
+cd_masked_contact_plot_ideology_pure
+
+ggsave("cd_masks_pooled_ideology_pure.png", plot = cd_masked_contact_plot_ideology_pure, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Masks", width = 12, height = 8, units = "in")
+```
+
 Vaccination
 ```{r}
-cd_vaccination_model <- lm(Vaccinated ~  log_rate_prev_12_01_20 + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + political_party_to_CD + cityNY +`cityBay Area` +cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + wave, 
+cd_vaccine_model <- lm(Vaccinated ~ log_prev_week_inc_rate + county_mask_mandate + Metro + male + educ_group + resp_yob + resp_hhsize + r_race + r_working + cityNY + `cityBay Area` + cityPhiladelphia + cityPhoenix + cityBoston + cityAtlanta + political_party_to_CD, 
+                           data = filtered_df,
+                           weights = weight_pooled)
+
+print(summary(cd_vaccine_model))
+
+emm_vaccine<- emmeans(cd_vaccine_model, specs = "political_party_to_CD", 
+                        at = list(log_prev_week_inc_rate = weighted.mean(bics_zip_features$log_prev_week_inc_rate, w = bics_zip_features$weight_pooled, na.rm = TRUE),
+                                  resp_yob = weighted.mean(bics_zip_features$resp_yob, w = bics_zip_features$weight_pooled, na.rm = TRUE),
+                                  resp_hhsize = weighted.mean(bics_zip_features$resp_hhsize, w = bics_zip_features$weight_pooled, na.rm = TRUE),
+                                  county_mask_mandate = "Strict",
+                                  Metro = 1,
+                                  Male = 1,
+                                  r_race = "White",
+                                  wave = "2",
+                                  cityNY = 0,
+                                  `cityBay Area` = 0,
+                                  cityPhiladelphia = 0,
+                                  cityPhoenix = 0,
+                                  cityBoston = 0,
+                                  cityAtlanta = 0))
+
+emm_vaccine <- transform(summary(emm_vaccine))
+emm_vaccine$controls <- "controls"
+print(emm_vaccine)
+
+cd_vaccine_model_raw <- lm(Vaccinated ~ cityNY + `cityBay Area` + cityPhiladelphia + cityPhoenix + cityBoston + cityAtlanta + political_party_to_CD, 
+                           data = filtered_df,
+                           weights = weight_pooled)
+
+print(summary(cd_vaccine_model))
+
+emm_vaccine_raw <- emmeans(cd_vaccine_model_raw, specs = "political_party_to_CD", 
+                        at = list(log_current_week_inc_rate = weighted.mean(bics_zip_features$log_current_week_inc_rate, w = bics_zip_features$weight_pooled, na.rm = TRUE),
+                                  resp_yob = weighted.mean(bics_zip_features$resp_yob, w = bics_zip_features$weight_pooled, na.rm = TRUE),
+                                  resp_hhsize = weighted.mean(bics_zip_features$resp_hhsize, w = bics_zip_features$weight_pooled, na.rm = TRUE),
+                                  county_mask_mandate = "Strict",
+                                  Metro = 1,
+                                  Male = 1,
+                                  r_race = "White",
+                                  wave = "2",
+                                  cityNY = 0,
+                                  `cityBay Area` = 0,
+                                  cityPhiladelphia = 0,
+                                  cityPhoenix = 0,
+                                  cityBoston = 0,
+                                  cityAtlanta = 0))
+
+emm_vaccine_raw <- transform(summary(emm_vaccine_raw))
+emm_vaccine_raw$controls <- "baseline"
+
+levels = c("Democrat in Democratic led CD","Democrat in Republican led CD","Republican in Democratic led CD","Republican in Republican led CD")
+
+emm_vaccine <- emm_vaccine %>% 
+  filter(political_party_to_CD %in% levels)
+
+emm_vaccine_raw <- emm_vaccine_raw %>% 
+  filter(political_party_to_CD %in% levels)
+
+emm_vaccine$political_party_to_CD <- factor(emm_vaccine$political_party_to_CD, levels = levels)
+emm_vaccine_raw$political_party_to_CD <- factor(emm_vaccine_raw$political_party_to_CD, levels = levels)
+
+all_emms <- rbind(emm_vaccine, emm_vaccine_raw)
+
+cd_vaccine_plot <- ggplot(all_emms, aes(x = political_party_to_CD, y = emmean, color = political_party_to_CD, group = interaction(political_party_to_CD, controls))) +
+  geom_point(aes(shape = controls, size = controls), position = position_dodge(width = dodge_width)) +
+  scale_color_manual(name = "Political Party", values = c("blue", "purple", "magenta","red")) +
+  scale_shape_manual(name = NULL, values = c("baseline" = 1, "controls" = 16), labels = c("unadjusted", "adjusted")) +
+  scale_size_manual(values = c("baseline" = 6, "controls" = 6), labels = c("unadjusted", "adjusted")) +
+  labs(y = "", x = "", color = "Political Party", title = "predicted percent chance of vaccination") +
+  geom_errorbar(aes(ymin = emmean - SE, ymax = emmean + SE), width = 0.2, position = position_dodge(width = dodge_width)) +
+  theme_minimal() +
+  theme(legend.position = "none",
+        plot.title = element_text(size = 18),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.x = element_line(color = "grey70", size = 0.5),
+        panel.grid.major.y = element_line(color = "grey90", size = 0.5),
+        axis.title.x = element_text(size = 18),
+        axis.text.x = element_text(size = 20),
+        axis.text.y = element_text(size = 22),
+        axis.title.y = element_text(size = 16),
+        legend.title = element_text(size = 12),
+        legend.text = element_text(size = 10)) +
+  scale_x_discrete(labels = c("Democrat in Democratic led CD" = "Democrat in \nDemocratic District", 
+                              "Democrat in Republican led CD" = "Democrat in \nRepublican District", 
+                              "Republican in Democratic led CD" = "Republican in \nDemocratic District", 
+                              "Republican in Republican led CD" = "Republican in \nRepublican District"))
+cd_vaccine_plot
+
+ggsave("cd_vaccines_pooled.png", plot = cd_vaccine_plot, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Vaccines", width = 12, height = 8, units = "in")
+```
+
+```{r}
+cd_vaccination_model <- lm(Vaccinated ~ log_current_week_inc_rate + county_mask_mandate + COUNTY_RUCC_2013 + male + educ_group + resp_yob + r_working + resp_hhsize + r_race + cityNY +`cityBay Area` + cityPhiladelphia + cityPhoenix +cityBoston + cityAtlanta + political_party_to_CD, 
                               data = bics_zip_features,
                               weights = weight_pooled)
 
 print(summary(cd_vaccination_model))
 
-vaccination_pred_plot <- plot_model(
-  cd_vaccination_model,
-  colors = "black",
-  type = "pred",
-  auto.label = FALSE,
-  terms = c("political_party_to_CD[Democrat in Democratic led CD, Democrat in Republican led CD, Republican in Democratic led CD, Republican in Republican led CD]"),
-  title = "Partisan Differences in Vaccination Across Opposing \nParty Districts",
-  axis.title = c("", "Predicted Proportion Vaccinated")
-) +
-theme_minimal() +
-  theme(
-    legend.position = "none",
-    axis.text.y = element_text(size = 20), 
-    axis.title.y = element_text(size = 20), 
-    axis.text.x = element_text(size = 14), 
-    axis.title.x = element_text(size = 14),  
-    plot.title = element_text(size = 28, face = "bold"), 
-    plot.subtitle = element_text(size = 15)
-  ) +
-  geom_point(size = 5) 
+emm_vaccination <- emmeans(cd_vaccination_model, specs = "political_party_to_CD")
+emm_vaccination <- transform(summary(emm_vaccination))
+
+levels = c("Democrat in Democratic led CD","Democrat in Republican led CD","Republican in Democratic led CD","Republican in Republican led CD")
+
+emm_vaccination <- emm_vaccination %>% 
+  filter(political_party_to_CD %in% levels)
+
+
+emm_vaccination$political_party_to_CD <- factor(emm_vaccination$political_party_to_CD, levels = levels)
+
+vaccination_pred_plot <- ggplot(emm_vaccination, aes(x = political_party_to_CD, y = emmean, color = political_party_to_CD)) +
+  geom_point(position = position_dodge(width = 0.35), size = 5) +
+  scale_color_manual(name = "Political Party", values = c("blue", "purple", "magenta","red")) +
+  labs(y = "", x = "", color = "Political Party", title = "Probability of Vaccination") + 
+  geom_errorbar(aes(ymin = emmean - SE, ymax = emmean + SE), width = 0.2, position = position_dodge(width = 0.35)) +
+  theme_minimal() +
+  theme(legend.position = "none",
+        plot.title = element_text(size = 18),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.x = element_line(color = "grey70", size = 0.5),
+        panel.grid.major.y = element_line(color = "grey90", size = 0.5),
+        axis.title.x = element_text(size = 18),
+        axis.text.x = element_text(size = 20),
+        axis.text.y = element_text(size = 22),
+        axis.title.y = element_text(size = 16),
+        legend.title = element_text(size = 12),
+        legend.text = element_text(size = 10)) +
+  scale_x_discrete(labels = c("Democrat in Democratic led CD" = "Democrat in \nDemocratic District", "Democrat in Republican led CD" = "Democrat in \nRepublican District", "Republican in Democratic led CD" = "Republican in \nDemocratic District", "Republican in Republican led CD" = "Republican in \nRepublican District"))
 
 ggsave("cd_vaccines_pooled.png", plot = vaccination_pred_plot, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Vaccines", width = 12, height = 8, units = "in")
 

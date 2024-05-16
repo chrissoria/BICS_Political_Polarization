@@ -51,13 +51,17 @@ average_by_party <- filtered_df %>%
     average_white = weighted.mean(white, w = weight_pooled, na.rm = TRUE),
     average_hispanic = weighted.mean(r_hispanic_num, w = weight_pooled, na.rm = TRUE),
     average_household_size = weighted.mean(resp_hhsize, w = weight_pooled, na.rm = TRUE),
-    average_urban = weighted.mean(COUNTY_RUCC_2013, w = weight_pooled, na.rm = TRUE),
+    average_metro = weighted.mean(Metro, w = weight_pooled, na.rm = TRUE),
     num_non_houshold_cc = weighted.mean(num_cc_nonhh, w = weight_pooled, na.rm = TRUE),
     num_cc = weighted.mean(num_cc, w = weight_pooled, na.rm = TRUE),
-    num_masks = weighted.mean(Norm_Masks_Used, w = weight_pooled, na.rm = TRUE)
+    percent_mask = weighted.mean(Norm_Masks_Used, w = weight_pooled, na.rm = TRUE),
+    vaccinated = weighted.mean(Vaccinated, w = weight_pooled, na.rm = TRUE),
+    concern = weighted.mean(binary_concern_strong, w = weight_pooled, na.rm = TRUE)
   )
 
 average_by_party
+
+write_csv(average_by_party, "../data/party_average_differences.csv")
 ```
 Do average contact and mask usage rates differ much over time?
 
@@ -122,7 +126,7 @@ Detailed findings:
 - people who are vaccinated are more likely to be employed
 - people who are vaccinated are more likely to white
 - no difference for Hispanic
-- people who are vaccinated are coming from smaler household sizes
+- people who are vaccinated are coming from smaller household sizes
 - vaccinated people are more likely to come from densely urbanized counties
 ```{r}
 average_by_vaccine <- filtered_df %>%
@@ -210,31 +214,6 @@ average_by_masks
 What about democrats who are within republican districts?
 High level findings:
 - Democrats in majority republican CD's resemble them in a few ways. They are older, whiter and less Hispanic, less likely to have a college education, less likely to be in highly urbanized counties. However, they differ in that they're less likely to be employed, have smaller household size. Compared to Republicans, Democrats are much less likely to live in an opposing party district (could just be a result of how sample was collected). 
-
-
-```{r}
-filtered_df_D <- D_df %>% 
-  filter(!is.na(CD_PERCENT_REPUBLICAN))
-
-average_by_CD_D <- filtered_df_D %>%
-  group_by(CD_PERCENT_REPUBLICAN > .5) %>%
-  summarise(
-    count = n(),
-    average_age = mean(age, na.rm = TRUE),
-    average_male = mean(male, na.rm = TRUE),
-    average_college = mean(r_college_grad, na.rm = TRUE),
-    average_employed = mean(r_working_num, na.rm = TRUE),
-    average_white = mean(white, na.rm = TRUE),
-    average_hispanic = mean(r_hispanic_num, na.rm = TRUE),
-    average_household_size = mean(resp_hhsize, na.rm = TRUE),
-    average_urban = mean(COUNTY_RUCC_2013, na.rm = TRUE),
-    average_extremism = mean(extreme_liberal, na.rm = TRUE)
-  )
-
-average_by_CD_D
-```
-The democratic findings might just be due to the way the sample was collected
-Let's check the national samples to see if it holds
 ```{r}
 filtered_df_D <- national_df %>% 
   filter(!is.na(CD_PERCENT_REPUBLICAN) & political_party == "Democrat")
@@ -242,7 +221,7 @@ filtered_df_D <- national_df %>%
 average_by_CD_D <- filtered_df_D %>%
   group_by(CD_PERCENT_REPUBLICAN > .5) %>%
   summarise(
-    count = n()/nrow(filtered_df_D),
+    percent = n()/nrow(filtered_df_D),
     average_age = mean(age, w = weight_pooled, na.rm = TRUE),
     average_male = mean(male, w = weight_pooled, na.rm = TRUE),
     average_college = mean(r_college_grad, w = weight_pooled, na.rm = TRUE),
@@ -261,29 +240,6 @@ average_by_CD_D
 And, what about republicans in democratic districts?
 High level findings:
 - Republicans in highly democratic areas resemble democrats. They're younger, they're more likely to have a college education, they're less white, more Hispanic, and more likely to live in a dense urban area. However, they're also likely to have a higher household size, more likely to be employed, more likely to be male. Republicans in highly democratic CD's are also less likely to be extreme conservatives. There's also a good amount of republicans in both categories. 
-
-```{r}
-filtered_df_R <- R_df %>% 
-  filter(!is.na(CD_PERCENT_DEMOCRAT))
-
-average_by_CD_R <- filtered_df_R %>%
-  group_by(CD_PERCENT_DEMOCRAT > .5) %>%
-  summarise(
-    count = n()/nrow(filtered_df_R),
-    average_age = mean(age, w = weight_pooled, na.rm = TRUE),
-    average_male = mean(male, w = weight_pooled, na.rm = TRUE),
-    average_college = mean(r_college_grad, w = weight_pooled, na.rm = TRUE),
-    average_employed = mean(r_working_num, w = weight_pooled, na.rm = TRUE),
-    average_white = mean(white, na.rm = TRUE),
-    average_hispanic = mean(r_hispanic_num, w = weight_pooled, na.rm = TRUE),
-    average_household_size = mean(resp_hhsize, w = weight_pooled, na.rm = TRUE),
-    average_urban = mean(COUNTY_RUCC_2013, w = weight_pooled, na.rm = TRUE),
-    average_extremism = mean(extreme_conservative, w = weight_pooled, na.rm = TRUE)
-  )
-
-average_by_CD_R
-```
-Let's also look at the national sample instead
 ```{r}
 filtered_df_R <- national_df %>% 
   filter(!is.na(CD_PERCENT_DEMOCRAT) & political_party == "Republican")
@@ -359,6 +315,7 @@ bi_age <- lm(num_cc_nonhh ~ young, data = bics_zip_features, weights = weight_po
 bi_party <- lm(num_cc_nonhh ~ republican, data = RD_df, weights = weight_pooled)
 bi_race <- lm(num_cc_nonhh ~ white, data = bics_zip_features, weights = weight_pooled)
 bi_gender <- lm(num_cc_nonhh ~ male, data = bics_zip_features, weights = weight_pooled)
+bi_concern <- lm(num_cc_nonhh ~ strong_concern_inverse, data = bics_zip_features, weights = weight_pooled)
 
 summary(bi_party)
 
@@ -366,26 +323,28 @@ emm_race <- emmeans(bi_race, specs = pairwise ~ white)
 emm_gender <- emmeans(bi_gender, specs = pairwise ~ male)
 emm_age <- emmeans(bi_age, specs = pairwise ~ young)
 emm_party <- emmeans(bi_party, specs = pairwise ~ republican)
+emm_concern <- emmeans(bi_concern, specs = pairwise ~ strong_concern_inverse)
 
 contr_race <- contrast(emm_race, "pairwise")
 contr_gender <- contrast(emm_gender, "pairwise")
 contr_age <- contrast(emm_age, "pairwise")
 contr_party <- contrast(emm_party, "pairwise")
+contr_concern <- contrast(emm_concern, "pairwise")
 
-# Convert emmeans summaries to data frames
 df_race_contrasts <- summary(contr_race) %>% as.data.frame()
 df_gender_contrasts <- summary(contr_gender) %>% as.data.frame()
 df_age_contrasts <- summary(contr_age) %>% as.data.frame()
 df_party_contrasts <- summary(contr_party) %>% as.data.frame()
+df_concern <- summary(contr_concern) %>% as.data.frame()
 
-# Correct: Assign 'variable' column directly to emm_* data frames
 emm_race$variable <- "white"
 emm_gender$variable <- "male"
 emm_age$variable <- "65+"
 emm_party$variable <- "republican"
+emm_concern$variable <- "very concerned"
 
 # Combine all emm_* data frames into one
-combined_contrasts <- bind_rows(df_age_contrasts, df_party_contrasts, df_race_contrasts, df_gender_contrasts)
+combined_contrasts <- bind_rows(df_age_contrasts, df_party_contrasts, df_race_contrasts, df_gender_contrasts, df_concern)
 combined_contrasts <- as.data.frame(combined_contrasts)
 
 combined_contrasts$contrast <- factor(combined_contrasts$contrast, levels = unique(combined_contrasts$contrast))
@@ -395,21 +354,22 @@ pred_race <- ggplot(combined_contrasts, aes(x = contrast, y = -1 * estimate, fil
   geom_bar(stat = "identity", position = position_dodge(), width = 0.7) +  # Draw bars
   geom_errorbar(aes(ymin = -1 * (estimate + SE), ymax = -1 * (estimate - SE)), 
                 position = position_dodge(0.7), width = 0.25) +  # Add error bars
-  labs(x = "Contrast", y = "Estimated Gap in Non-Household Contacts", title = "Difference in Predicted Contacts Between Groups") +
-  scale_x_discrete(labels = c("Young - Old", "Republican - Democrat", "White - Non-White", "Male - Non-Male")) +
+  labs(x = "", y = "", title = "differential non-household contacts by group") +
+  scale_x_discrete(labels = c("Young - Old", "Republican - Democrat", "White - Non-White", "Male - Non-Male", "very concerned - not very concerned")) +
   scale_fill_manual(values = c("young0 - young1" = "gray", "republican0 - republican1" = "red", 
-                               "white0 - white1" = "gray", "male0 - male1" = "gray")) +
+                               "white0 - white1" = "gray", "male0 - male1" = "gray", "very concerned - not very concerned" = "darkgreen")) +
   theme_minimal() +
   theme(legend.position = "none",
-        plot.title = element_text(size = 26),
+        plot.title = element_text(size = 18),
         panel.grid.minor.y = element_blank(),
         panel.grid.major.x = element_line(color = "grey70", size = 0.5),
         panel.grid.major.y = element_line(color = "grey90", size = 0.5),
         axis.title.x = element_text(size = 18),
-        axis.text.x = element_text(size = 15),
+        axis.text.x = element_text(size = 20),
+        axis.text.y = element_text(size = 22),
         axis.title.y = element_text(size = 16),
         legend.title = element_text(size = 12),
-        legend.text = element_text(size = 10)) # Remove legend if unnecessary
+        legend.text = element_text(size = 10))
 
 ggsave("contrast_contacts.png", plot = pred_race, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Contacts", width = 12, height = 8, units = "in")
 
@@ -457,21 +417,22 @@ pred_race <- ggplot(combined_contrasts, aes(x = contrast, y = -1 * estimate, fil
   geom_bar(stat = "identity", position = position_dodge(), width = 0.7) +  # Draw bars
   geom_errorbar(aes(ymin = -1 * (estimate + SE), ymax = -1 * (estimate - SE)), 
                 position = position_dodge(0.7), width = 0.25) +  # Add error bars
-  labs(x = "Contrast", y = "Estimated Gap in Mask Usage", title = "Difference in Predicted Mask Usage Between Groups") +
+  labs(x = "", y = "", title = "differential mask-usage by group") +
   scale_x_discrete(labels = c("Young - Old", "Republican - Democrat", "White - Non-White", "Male - Non-Male")) +
   scale_fill_manual(values = c("young0 - young1" = "gray", "republican0 - republican1" = "red", 
                                "white0 - white1" = "gray", "male0 - male1" = "gray")) +
   theme_minimal() +
   theme(legend.position = "none",
-        plot.title = element_text(size = 26),
+        plot.title = element_text(size = 18),
         panel.grid.minor.y = element_blank(),
         panel.grid.major.x = element_line(color = "grey70", size = 0.5),
         panel.grid.major.y = element_line(color = "grey90", size = 0.5),
         axis.title.x = element_text(size = 18),
-        axis.text.x = element_text(size = 15),
+        axis.text.x = element_text(size = 20),
+        axis.text.y = element_text(size = 22),
         axis.title.y = element_text(size = 16),
         legend.title = element_text(size = 12),
-        legend.text = element_text(size = 10))  # Remove legend if unnecessary
+        legend.text = element_text(size = 10))
 
 ggsave("contrast_masks.png", plot = pred_race, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/Masks", width = 12, height = 8, units = "in")
 
@@ -601,18 +562,19 @@ pred_race <- ggplot(combined_contrasts, aes(x = contrast, y = -1 * estimate, fil
   geom_bar(stat = "identity", position = position_dodge(), width = 0.7) + 
   geom_errorbar(aes(ymin = -1 * (estimate + SE), ymax = -1 * (estimate - SE)), 
                 position = position_dodge(0.7), width = 0.25) + 
-  labs(x = "Contrast", y = "Estimated Gap in Vaccination Rates", title = "Difference in Predicted Vaccination Between Groups") +
-  scale_x_discrete(labels = c("Young - Old", "Republican - Democrat", "White - Non-White", "Male - Non-Male")) +
+  labs(x = "", y = "", title = "differential vaccination rates by group") +
+  scale_x_discrete(labels = c("Young-Old", "Republican-Democrat", "White-Non-White", "Male-Non-Male")) +
   scale_fill_manual(values = c("young0 - young1" = "gray", "republican0 - republican1" = "red", 
                                "white0 - white1" = "gray", "male0 - male1" = "gray")) +
   theme_minimal() +
   theme(legend.position = "none",
-        plot.title = element_text(size = 26),
+        plot.title = element_text(size = 18),
         panel.grid.minor.y = element_blank(),
         panel.grid.major.x = element_line(color = "grey70", size = 0.5),
         panel.grid.major.y = element_line(color = "grey90", size = 0.5),
         axis.title.x = element_text(size = 18),
-        axis.text.x = element_text(size = 15),
+        axis.text.x = element_text(size = 20),
+        axis.text.y = element_text(size = 20),
         axis.title.y = element_text(size = 16),
         legend.title = element_text(size = 12),
         legend.text = element_text(size = 10)) 
@@ -673,4 +635,29 @@ contact_reduction_rvd_waves
 
 rm(all_emms,contact_reduction_rvd_waves)
 ```
+Let's plot the incidence rate alongside waves for descriptive purposes
+```{r}
+cases_plot <- ggplot(cases_df, aes(x = formal_dates, y = weekly_cases)) +
+  geom_col(fill = "darkgray", width = 25) + 
+  labs(x = "", y = "",title = "Weekly Average Cases") +
+  theme_minimal() +
+  scale_x_date(breaks = cases_df$formal_dates, labels = scales::date_format("%b, '%y")) + 
+  theme(legend.position = "none",
+        plot.title = element_text(size = 18),
+        panel.grid.minor = element_blank(),
+        panel.grid.major = element_blank(),
+        axis.title.x = element_text(size = 18),
+        axis.text.x = element_text(size = 25),
+        axis.text.y = element_text(size = 20),
+        axis.title.y = element_text(size = 16),
+        legend.title = element_text(size = 12),
+        legend.text = element_text(size = 10))
 
+print(cases_plot)
+
+ggsave("cases.png", plot = cases_plot, path = "/Users/chrissoria/Documents/Research/BICS_Political_Polarization/plots/", width = 12, height = 8, units = "in")
+```
+Can we make any assumptions about homophily of contacts between republicans and democrats?
+Paper by Brown and Enos suggests that Democrats are more homophilous than Republicans
+https://www.nature.com/articles/s41562-021-01066-z
+They find that, on average, 
