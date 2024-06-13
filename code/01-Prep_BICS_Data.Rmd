@@ -620,6 +620,14 @@ bics_zip_features <- bics_zip_features %>%
     TRUE ~ 0
   ))
 
+#democrat
+bics_zip_features <- bics_zip_features %>%
+  mutate(democrat = case_when(
+    is.na(political_party) ~ NA_real_,  # Preserve NA values by explicitly handling them
+    political_party == "Democrat" ~ 1,
+    TRUE ~ 0
+  ))
+
 #republican district
 bics_zip_features <- bics_zip_features %>%
   mutate(republican_district = case_when(

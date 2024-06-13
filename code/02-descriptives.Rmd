@@ -52,6 +52,7 @@ average_by_party <- filtered_df %>%
     average_hispanic = weighted.mean(r_hispanic_num, w = weight_pooled, na.rm = TRUE),
     average_household_size = weighted.mean(resp_hhsize, w = weight_pooled, na.rm = TRUE),
     average_metro = weighted.mean(Metro, w = weight_pooled, na.rm = TRUE),
+    num_total_cc = weighted.mean(num_cc, w = weight_pooled, na.rm = TRUE),
     num_non_houshold_cc = weighted.mean(num_cc_nonhh, w = weight_pooled, na.rm = TRUE),
     num_cc = weighted.mean(num_cc, w = weight_pooled, na.rm = TRUE),
     percent_mask = weighted.mean(Norm_Masks_Used, w = weight_pooled, na.rm = TRUE),
@@ -635,6 +636,117 @@ contact_reduction_rvd_waves
 
 rm(all_emms,contact_reduction_rvd_waves)
 ```
+Lastly, I want to get a sense of the most and least polarized counties, see how polarization changes over time, and get a sense of what drives polarization
+let's start with polarization over time
+
+```{r}
+library(dplyr)
+library(purrr)  # For map and map_dfr functions
+
+# Define the function to summarize data
+summarize_data <- function(df, wave_num, group) {
+  df %>%
+    filter(wave == wave_num) %>%
+    summarise(
+      wave = wave_num,
+      num_non_houshold_cc = mean(num_cc_nonhh, na.rm = TRUE),
+      num_cc = mean(num_cc, w = weight_pooled, na.rm = TRUE),
+      percent_mask = mean(Norm_Masks_Used, na.rm = TRUE),
+      vaccinated = mean(Vaccinated, na.rm = TRUE),
+      concern =mean(binary_concern_strong, na.rm = TRUE)
+    ) %>%
+    mutate(group = group)
+}
+
+# Define the datasets and waves
+datasets <- list(D = D_df, R = R_df)
+waves <- c(2, 3, 4, 5, 6) # Add more waves if needed
+
+# Create a list to store the results
+results <- list()
+
+# Loop through datasets and waves
+for (name in names(datasets)) {
+  for (wave_num in waves) {
+    result_name <- paste("average_for", name, "w", wave_num, sep = "_")
+    results[[result_name]] <- summarize_data(datasets[[name]], wave_num, name)
+  }
+}
+
+# Combine all summaries into one data frame
+combined_results <- bind_rows(results)
+
+# Pivot the data to wide format
+wide_results <- combined_results %>%
+  pivot_wider(names_from = group, values_from = c(num_non_houshold_cc, num_cc, percent_mask, vaccinated, concern)) %>%
+  rename(
+    D_num_non_houshold_cc = num_non_houshold_cc_D,
+    R_num_non_houshold_cc = num_non_houshold_cc_R,
+    D_num_cc = num_cc_D,
+    R_num_cc = num_cc_R,
+    D_percent_mask = percent_mask_D,
+    R_percent_mask = percent_mask_R,
+    D_vaccinated = vaccinated_D,
+    R_vaccinated = vaccinated_R,
+    D_concern = concern_D,
+    R_concern = concern_R
+  )
+
+# Create a data frame for differences
+differences_df <- data.frame(
+  wave = wide_results$wave,
+  diff_num_non_houshold_cc = wide_results$R_num_non_houshold_cc - wide_results$D_num_non_houshold_cc,
+  diff_num_cc = wide_results$R_num_cc - wide_results$D_num_cc,
+  diff_percent_mask = wide_results$R_percent_mask - wide_results$D_percent_mask,
+  diff_vaccinated = wide_results$R_vaccinated - wide_results$D_vaccinated,
+  diff_concern = wide_results$R_concern - wide_results$D_concern
+)
+
+# View the final results
+print(differences_df)
+```
+```{r}
+ggplot(differences_df, aes(x = wave, y = diff_num_non_houshold_cc)) +
+  geom_line() +
+  geom_point() +
+  labs(
+    title = "Difference in Non-household CC by Wave",
+    x = "Wave",
+    y = "Difference in Non-household CC"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5)
+  )
+
+ggplot(differences_df, aes(x = wave, y = diff_percent_mask)) +
+  geom_line() +
+  geom_point() +
+  labs(
+    title = "Difference in Percent Masks Used by Wave",
+    x = "Wave",
+    y = "Difference in Non-household CC"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5)
+  )
+
+ggplot(differences_df, aes(x = wave, y = diff_concern)) +
+  geom_line() +
+  geom_point() +
+  labs(
+    title = "Difference in Concern Used by Wave",
+    x = "Wave",
+    y = "Difference in Non-household CC"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5)
+  )
+```
+
+
 Let's plot the incidence rate alongside waves for descriptive purposes
 ```{r}
 cases_plot <- ggplot(cases_df, aes(x = formal_dates, y = weekly_cases)) +
