@@ -8,11 +8,469 @@ output: html_document
 library(dplyr)
 library(tidyverse)
 library(data.table)
+library(readxl)
+library(stringr)
 ```
+
+```{r}
+ayesha_path <- 'insert_path_here'
+dennis_path <- 'insert_path_here'
+chris_path <- '/Users/chrissoria/Documents/Research/BICS_Political_Polarization'
+```
+
 switch between manual and combined
 ```{r}
 file_type <- "manual"
+setwd(chris_path) #user enters file path here
+
+path_set <- getwd()
+print(path_set)
 ```
+
+some ZIP Codes, such as "unique" ZIPs that are often tied to an internal mail-routing mechanism (such as UC Berkeley which has its own internal ZIP code and mail-routing system) will have very low ratios).
+As of 12/23 I'm realzing that I'll need to start with a complete list of all ZIP codes (from USPS) before I start this so I can get a good sense of completeness.
+
+Below, I'm reading in that full list of ZIP codes
+```{r}
+ZIP_to_CD_df <- read_excel(paste0(path_set,'/Data/ZIP_CD_062020.xlsx')) %>%
+  rename(
+    CD_RES_RATIO = RES_RATIO,
+    CD_BUS_RATIO = BUS_RATIO,
+    CD_OTH_RATIO = OTH_RATIO,
+    CD_TOT_RATIO = TOT_RATIO
+  ) %>%
+  mutate(ZIP = str_pad(as.character(ZIP), width = 5, pad = "0"))
+
+print(ZIP_to_CD_df)
+```
+```{r}
+# Read the Excel file and ensure all columns are read as text otherwise leading zeroes in ZIP will be cut
+FULL_ZIPS <- read_excel(paste0(path_set, '/Data/Full_Zips.xlsx'), col_types = "text")
+
+FULL_ZIPS <- FULL_ZIPS %>%
+  rename(
+    ZIP = `DELIVERY ZIPCODE`,
+    USPS_STATE = `PHYSICAL STATE`
+  )
+
+FULL_ZIPS <- FULL_ZIPS[, c("ZIP", "USPS_STATE", "TYPE")]
+
+# Remove duplicate ZIP codes and clean the data
+FULL_ZIPS <- FULL_ZIPS %>%
+  distinct(ZIP, .keep_all = TRUE) %>%
+  mutate(ZIP = str_pad(ZIP, width = 5, pad = "0")) %>%
+  filter(!is.na(USPS_STATE)) %>%
+  filter(!USPS_STATE %in% c("VI", "PR", "MH", "MP", "FM", "GU")) %>%
+  filter(!TYPE %in% c("Other", "Unique")) %>%
+  arrange(ZIP) %>%
+  ungroup()
+
+print(nrow(FULL_ZIPS))
+print(head(FULL_ZIPS))
+```
+After merging, I find that many of the Alaska ZIP codes aren't getting matched. Since there's only one CD in Alaska, I'll fill in any Alaska state ZIP with 0200.
+This data will not match PO boxes. Most non matches are coming from PO boxes.
+```{r}
+ZIP_FEATURES <- left_join(FULL_ZIPS, ZIP_to_CD_df, by = "ZIP")
+
+ZIP_FEATURES <- ZIP_FEATURES %>%
+  mutate(
+    CD = ifelse(USPS_STATE == "AK", "0200", CD),
+    CD_TOT_RATIO = ifelse(USPS_STATE == "AK", 1.0, CD_TOT_RATIO),
+    CD = ifelse(ZIP == "15253", "4212", CD)
+  )
+
+# the resulting dataframe is a ZIP code matches to CD
+print(ZIP_FEATURES)
+```
+For now, I will assign a ZIP code to whatever whatever County it falls mostly under residential
+We will run this as an outer match because then we can keep zip codes from the right side that aren't in the left side
+```{r}
+ZIP_to_County_df <- read_excel(paste0(path_set, '/Data/ZIP_COUNTY_062020_HUD.xlsx'), col_types = "text")
+
+# Ensure COUNTY and ZIP columns are strings with zero padding
+ZIP_to_County_df <- ZIP_to_County_df %>%
+  mutate(
+    COUNTY = str_pad(COUNTY, width = 5, pad = "0"),
+    ZIP = str_pad(ZIP, width = 5, pad = "0")
+  )
+
+print(head(ZIP_to_County_df))
+
+ZIP_FEATURES <- full_join(ZIP_FEATURES, ZIP_to_County_df, by = "ZIP")
+
+ZIP_FEATURES <- ZIP_FEATURES %>%
+  arrange(desc(RES_RATIO)) %>%
+  distinct(ZIP, .keep_all = TRUE)
+
+ZIP_to_County_df <- ZIP_to_County_df %>%
+  rename(
+    COUNTY_RES_RATIO = RES_RATIO,
+    COUNTY_BUS_RATIO = BUS_RATIO,
+    COUNTY_OTH_RATIO = OTH_RATIO,
+    COUNTY_TOT_RATIO = TOT_RATIO
+  )
+
+#the resulting DF now matches zip codes to county
+print(head(ZIP_FEATURES))
+
+# Count the number of missing values in the COUNTY column and calculate the percentage
+missing_count <- sum(is.na(ZIP_FEATURES$COUNTY))
+missing_percentage <- mean(is.na(ZIP_FEATURES$COUNTY)) * 100
+
+print(missing_count)  
+print(missing_percentage) # High level of match
+print(nrow(ZIP_FEATURES))
+```
+```{r}
+CD_df <- read_csv(paste0(path_set, '/data/House_Reps_District.csv'), col_types = cols(
+  FIPS_Code = col_character(),
+  District = col_character(),
+  CD = col_character(),
+  .default = col_guess()  # Guess the types of the remaining columns
+))
+CD_df
+```
+
+
+```{r}
+# Ensure the 'CD' column is a character in both dataframes
+ZIP_FEATURES <- ZIP_FEATURES %>%
+  mutate(CD = as.character(CD))
+
+CD_df <- CD_df %>%
+  mutate(CD = as.character(CD))
+
+# Merge ZIP_FEATURES with CD_df using a left join on 'CD'
+ZIP_FEATURES <- left_join(ZIP_FEATURES, CD_df, by = "CD")
+
+# Rename columns in ZIP_FEATURES
+ZIP_FEATURES <- ZIP_FEATURES %>%
+  rename(
+    COUNTY_FIPS = COUNTY,
+    CONGRESSPERSON = Name,
+    STATE = State,
+    CONGRESSPERSON_PARTY = Party
+  )
+
+# Move specified columns to the end
+cols_to_move <- colnames(ZIP_FEATURES)[3:5]
+ZIP_FEATURES <- ZIP_FEATURES %>%
+  select(-all_of(cols_to_move), all_of(cols_to_move))
+
+ZIP_FEATURES
+```
+```{r}
+mask_mandates_count <- read_excel(paste0(path_set, '/data/county_mask_mandate_data.xlsx'), col_types = c("text"))
+
+mask_mandates_count <- mask_mandates_count %>%
+  select(county_fips, county_conditions, state_conditions)
+
+mask_mandates_count <- mask_mandates_count %>%
+  mutate(county_fips = str_pad(county_fips, width = 5, pad = "0"))
+
+mask_mandates_count <- mask_mandates_count %>%
+  mutate(county_conditions = ifelse(is.na(county_conditions) & !is.na(state_conditions), state_conditions, county_conditions)) %>%
+  mutate(county_conditions = ifelse(is.na(county_conditions), "no mandate", county_conditions))
+
+mask_mandates_count <- mask_mandates_count %>%
+  rename(COUNTY_FIPS = county_fips)
+
+print(head(mask_mandates_count))
+
+ZIP_FEATURES <- left_join(ZIP_FEATURES, mask_mandates_count, by = "COUNTY_FIPS")
+
+ZIP_FEATURES
+```
+I have a pretty decent match rate of 95%. I believe most of these will be from DC.
+
+```{r}
+num_missing_congressperson <- sum(is.na(ZIP_FEATURES$CONGRESSPERSON))
+perc_missing_congressperson <- mean(is.na(ZIP_FEATURES$CONGRESSPERSON)) * 100
+
+cat("Number of missing values in CONGRESSPERSON:", num_missing_congressperson, "\n")
+cat("Percentage of missing values in CONGRESSPERSON:", perc_missing_congressperson, "%\n")
+
+num_missing_county_conditions <- sum(is.na(ZIP_FEATURES$county_conditions))
+perc_missing_county_conditions <- mean(is.na(ZIP_FEATURES$county_conditions)) * 100
+
+cat("Number of missing values in county_conditions:", num_missing_county_conditions, "\n")
+cat("Percentage of missing values in county_conditions:", perc_missing_county_conditions, "%\n")
+```
+Below, we need to add a leading "0" to the FIPS code (FIPS codes are all 5 digits)
+These are cumulative mortality numbers (not weekly)
+```{r}
+usafacts_deaths <- read_csv(paste0(path_set, '/data/Partisanship and Health Behavior/Data/covid_deaths_usafacts.csv'), col_types = cols(
+  countyFIPS = col_character()
+))
+
+usafacts_deaths <- usafacts_deaths %>%
+  mutate(countyFIPS = str_pad(countyFIPS, width = 5, pad = "0"))
+```
+For this preliminary analysis, I will only use wave 2,4,6.
+Each wave's data was collected on 2020-06-17 - 2020-06-23, 2020-11-29 - 2020-12-16, 2021-05-12 - 2021-05-25.
+I will take covid mortality from the midpoint of the wave range.
+Wave 2 = 6/18-24. 2020
+Wave 3 = 9/12-20, 2020
+Wave 4 = 12/1-7, 2020
+Wave 5 = 2/9-14, 2021
+Wave 6 = 5/14-25, 2021
+
+```{r}
+usafacts_deaths <- read_csv(paste0(path_set, '/Data/Partisanship and Health Behavior/Data/covid_deaths_usafacts.csv'), col_types = cols(
+  countyFIPS = col_character()
+))
+
+usafacts_deaths <- usafacts_deaths %>%
+  mutate(countyFIPS = str_pad(countyFIPS, width = 5, pad = "0"))
+
+# Define the columns to keep
+columns_to_keep <- c('countyFIPS', 'County Name',
+                     '2020-06-01', '2020-06-15', '2020-06-13', '2020-06-20', # w2
+                     '2020-09-01', '2020-09-16', '2020-09-09', '2020-09-05', # w3
+                     '2020-12-05', '2020-12-04', '2020-12-01', '2020-11-28', # w4
+                     '2021-02-12', '2021-02-10', '2021-02-05', '2021-01-29', # w5
+                     '2021-05-19', '2021-05-17', '2021-05-12', '2021-05-05') # w6
+
+usafacts_deaths <- usafacts_deaths %>%
+  select(all_of(columns_to_keep))
+
+new_column_names <- ifelse(seq_along(columns_to_keep) <= 2, columns_to_keep, 
+                           paste0('COUNTY_COV_DEATHS_', gsub('-', '_', columns_to_keep)))
+
+colnames(usafacts_deaths) <- new_column_names
+
+usafacts_deaths <- usafacts_deaths %>%
+  rename(COUNTY_FIPS = countyFIPS)
+
+print(head(usafacts_deaths))
+```
+Nearly all ZIP codes get a match (just over 1 percent don't get matched).
+If we end up going back to mortality rates (as of now (01/14/24) we're using prevalence rates.
+```{r}
+ZIP_FEATURES <- left_join(ZIP_FEATURES, usafacts_deaths, by = "COUNTY_FIPS")
+
+num_missing_cov_deaths <- sum(is.na(ZIP_FEATURES$COUNTY_COV_DEATHS_2020_06_01))
+perc_missing_cov_deaths <- mean(is.na(ZIP_FEATURES$COUNTY_COV_DEATHS_2020_06_01)) * 100
+
+cat("Number of missing values in COUNTY_COV_DEATHS_2020_06_01:", num_missing_cov_deaths, "\n")
+cat("Percentage of missing values in COUNTY_COV_DEATHS_2020_06_01:", perc_missing_cov_deaths, "%\n")
+```
+```{r}
+census_pop <- read_csv(paste0(path_set, '/Data/Partisanship and Health Behavior/Data/co-est2021-alldata.csv'), 
+                       col_types = cols(
+                         STATE = col_character(),
+                         COUNTY = col_character(),
+                         .default = col_guess()
+                       ), 
+                       locale = locale(encoding = 'ISO-8859-1'))
+
+census_pop_FIPS <- read_excel(paste0(path_set, '/Data/Partisanship and Health Behavior/Data/all-geocodes-v2020.xlsx'), col_types = c("text"))
+
+census_pop_FIPS <- census_pop_FIPS %>%
+  rename(CTYNAME = `Area Name (including legal/statistical area description)`)
+
+census_pop <- census_pop %>%
+  mutate(COUNTY_FIPS = str_c(STATE, COUNTY))
+
+State_FIPS_Crosswalk <- census_pop %>%
+  select(STATE, STNAME) %>%
+  mutate(STATE_FIPS = as.character(STATE)) %>%
+  mutate(STATE = STNAME) %>%
+  select(-STNAME) %>%
+  distinct(STATE, .keep_all = TRUE) %>%
+  filter(!is.na(STATE))
+
+write_csv(State_FIPS_Crosswalk, paste0(path_set, '/data/STATE_FIPS_CROSSWALK.csv'))
+write_csv(State_FIPS_Crosswalk, paste0(path_set, '/Data/Partisanship and Health Behavior/Data/STATE_FIPS_CROSSWALK.csv'))
+
+columns_to_keep <- c('STATE', 'POPESTIMATE2020', 'DEATHS2020', 'POPESTIMATE2021', 'DEATHS2021', 'COUNTY_FIPS')
+census_pop <- census_pop %>%
+  select(all_of(columns_to_keep)) %>%
+  rename(STATE_FIPS = STATE)
+
+census_pop
+State_FIPS_Crosswalk
+```
+A crude mortality rate, not standardized or age adjusted, for this preliminary analysis
+I manually insert Puerto Rico' State FIPS code and District of Columbia to make this a clean merge across the board.
+```{r}
+ZIP_FEATURES <- left_join(ZIP_FEATURES, census_pop, by = "COUNTY_FIPS")
+
+ZIP_FEATURES <- ZIP_FEATURES %>%
+  mutate(
+    COV_County_CMR_2020_06_20 = (COUNTY_COV_DEATHS_2020_06_20 / POPESTIMATE2020) * 1000,
+    COV_County_CMR_2020_12_09 = (COUNTY_COV_DEATHS_2020_12_05 / POPESTIMATE2020) * 1000,
+    COV_County_CMR_2021_05_19 = (COUNTY_COV_DEATHS_2021_05_19 / POPESTIMATE2021) * 1000,
+    STATE_FIPS = if_else(STATE == "Puerto Rico", "72", STATE_FIPS)
+  )
+
+num_missing_cmr_2020_06_20 <- sum(is.na(ZIP_FEATURES$COV_County_CMR_2020_06_20))
+perc_missing_cmr_2020_06_20 <- mean(is.na(ZIP_FEATURES$COV_County_CMR_2020_06_20)) * 100
+
+cat("Number of missing values in COV_County_CMR_2020_06_20:", num_missing_cmr_2020_06_20, "\n")
+cat("Percentage of missing values in COV_County_CMR_2020_06_20:", perc_missing_cmr_2020_06_20, "%\n")
+```
+We have decided that prevalence is a better measure for predicting contact behavior than mortality
+I want these lags
+Wave 2 (6/18-24, 2020), midpoint: 06/21/2020, lag1: 06/14/2020, lag3: 06/07/2020
+Wave 3 (9/12-20, 2020), midpoint: 09/16/2020, lag1: 09/09/2020, lag3: 09/02/2020
+Wave 4 (12/1-7, 2020), midpoint: 12/04/2020, lag1: 11/27/2020, lag3: 11/20/2020
+Wave 5 (2/9-14, 2021), midpoint: 02/11/2021, lag: 02/04/2021, lag3: 01/28/2021
+Wave 6 (5/14-25, 2021), midpoint: 05/19/2021, lag: 05/12/2021, lag3: 05/05/2021
+```{r}
+# Read and process prevalence_mid_2020 data
+prevalence_mid_2020 <- read_csv(paste0(path_set, '/Data/Partisanship and Health Behavior/Data/JH_Prevalence/time_series_covid19_confirmed_US_mid_2020.csv'), 
+                                col_types = cols(.default = col_guess()))
+
+columns_to_keep <- c('FIPS', '6/21/20', '6/18/20', '6/14/20', '6/7/20')
+
+prevalence_mid_2020 <- prevalence_mid_2020 %>%
+  filter(iso2 == 'US') %>%
+  mutate(FIPS = as.character(FIPS),
+         FIPS = if_else(!is.na(FIPS) & str_detect(FIPS, "\\."), str_remove(FIPS, "0+$|\\.$"), FIPS),
+         FIPS = str_pad(FIPS, width = 5, pad = "0")) %>%
+  select(all_of(columns_to_keep))
+
+# Calculate wave_2_incidence and wave_2_inc_week_lag
+prevalence_mid_2020 <- prevalence_mid_2020 %>%
+  mutate(wave_2_incidence = as.numeric(`6/21/20`) - as.numeric(`6/14/20`),
+         wave_2_inc_week_lag = as.numeric(`6/14/20`) - as.numeric(`6/7/20`))
+
+write_csv(prevalence_mid_2020, paste0(path_set, '/data/wave_2_incidence.csv'))
+
+# Read and process prevalence_late_2020 data
+prevalence_late_2020 <- read_csv(paste0(path_set, '/Data/Partisanship and Health Behavior/Data/JH_Prevalence/time_series_covid19_confirmed_US_late_2020.csv'), 
+                                col_types = cols(.default = col_guess()))
+
+columns_to_keep <- c('FIPS', '9/16/20', '9/12/20', '9/9/20', '9/2/20')
+
+prevalence_late_2020 <- prevalence_late_2020 %>%
+  filter(iso2 == 'US') %>%
+  mutate(FIPS = as.character(FIPS),
+         FIPS = if_else(!is.na(FIPS) & str_detect(FIPS, "\\."), str_remove(FIPS, "0+$|\\.$"), FIPS),
+         FIPS = str_pad(FIPS, width = 5, pad = "0")) %>%
+  select(all_of(columns_to_keep))
+
+# Calculate wave_3_incidence and wave_3_inc_week_lag
+prevalence_late_2020 <- prevalence_late_2020 %>%
+  mutate(wave_3_incidence = `9/16/20` - `9/9/20`,
+         wave_3_inc_week_lag = `9/9/20` - `9/2/20`)
+
+write_csv(prevalence_late_2020, paste0(path_set, '/data/wave_3_incidence.csv'))
+
+# Read and process prevalence_early_2021 data
+prevalence_early_2021 <- read_csv(paste0(path_set, '/Data/Partisanship and Health Behavior/Data/JH_Prevalence/time_series_covid19_confirmed_US_early_2021.csv'), 
+                                col_types = cols(.default = col_guess()))
+
+columns_to_keep <- c('FIPS', '12/4/20', '12/1/20', '11/27/20', '11/20/20')
+
+prevalence_early_2021 <- prevalence_early_2021 %>%
+  filter(iso2 == 'US') %>%
+  mutate(FIPS = as.character(FIPS),
+         FIPS = if_else(!is.na(FIPS) & str_detect(FIPS, "\\."), str_remove(FIPS, "0+$|\\.$"), FIPS),
+         FIPS = str_pad(FIPS, width = 5, pad = "0")) %>%
+  select(all_of(columns_to_keep))
+
+# Calculate wave_4_incidence and wave_4_inc_week_lag
+prevalence_early_2021 <- prevalence_early_2021 %>%
+  mutate(wave_4_incidence = `12/4/20` - `11/27/20`,
+         wave_4_inc_week_lag = `11/27/20` - `11/20/20`)
+
+write_csv(prevalence_early_2021, paste0(path_set, '/data/wave_4_incidence.csv'))
+
+# Read and process prevalence_mid_2021 data
+prevalence_mid_2021 <- read_csv(paste0(path_set, '/Data/Partisanship and Health Behavior/Data/JH_Prevalence/time_series_covid19_confirmed_US_mid_2021.csv'), 
+                                col_types = cols(.default = col_guess()))
+
+columns_to_keep <- c('FIPS', '2/11/21', '2/9/21', '2/4/21', '1/28/21')
+
+prevalence_mid_2021 <- prevalence_mid_2021 %>%
+  filter(iso2 == 'US') %>%
+  mutate(FIPS = as.character(FIPS),
+         FIPS = if_else(!is.na(FIPS) & str_detect(FIPS, "\\."), str_remove(FIPS, "0+$|\\.$"), FIPS),
+         FIPS = str_pad(FIPS, width = 5, pad = "0")) %>%
+  select(all_of(columns_to_keep))
+
+# Calculate wave_5_incidence and wave_5_inc_week_lag
+prevalence_mid_2021 <- prevalence_mid_2021 %>%
+  mutate(wave_5_incidence = `2/11/21` - `2/4/21`,
+         wave_5_inc_week_lag = `2/4/21` - `1/28/21`)
+
+write_csv(prevalence_mid_2021, paste0(path_set, '/data/wave_5_incidence.csv'))
+
+# Read and process prevalence_mid_2021_2 data
+prevalence_mid_2021_2 <- read_csv(paste0(path_set, '/Data/Partisanship and Health Behavior/Data/JH_Prevalence/time_series_covid19_confirmed_US_mid_2021.csv'), 
+                                col_types = cols(.default = col_guess()))
+
+columns_to_keep <- c('FIPS', '5/19/21', '5/14/21', '5/12/21', '5/5/21')
+
+prevalence_mid_2021_2 <- prevalence_mid_2021_2 %>%
+  filter(iso2 == 'US') %>%
+  mutate(FIPS = as.character(FIPS),
+         FIPS = if_else(!is.na(FIPS) & str_detect(FIPS, "\\."), str_remove(FIPS, "0+$|\\.$"), FIPS),
+         FIPS = str_pad(FIPS, width = 5, pad = "0")) %>%
+  select(all_of(columns_to_keep))
+
+# Calculate wave_6_incidence and wave_6_inc_week_lag
+prevalence_mid_2021_2 <- prevalence_mid_2021_2 %>%
+  mutate(wave_6_incidence = `5/19/21` - `5/12/21`,
+         wave_6_inc_week_lag = `5/12/21` - `5/5/21`)
+
+write_csv(prevalence_mid_2021_2, paste0(path_set, '/data/wave_6_incidence.csv'))
+
+# Combine all prevalence data into one dataframe
+prevalence <- prevalence_mid_2020 %>%
+  left_join(prevalence_late_2020, by = "FIPS") %>%
+  left_join(prevalence_early_2021, by = "FIPS") %>%
+  left_join(prevalence_mid_2021, by = "FIPS") %>%
+  left_join(prevalence_mid_2021_2, by = "FIPS")
+
+# Rename columns to prepend 'prev_' to all columns except the first (FIPS)
+colnames(prevalence) <- ifelse(seq_along(colnames(prevalence)) == 1, colnames(prevalence), paste0('prev_', colnames(prevalence)))
+
+# Rename 'FIPS' to 'COUNTY_FIPS'
+prevalence <- prevalence %>%
+  rename(COUNTY_FIPS = FIPS) %>% 
+  filter(!is.na(COUNTY_FIPS))
+
+prevalence
+```
+Next, I want to create the weekly incidence for each key date
+
+#06/21/2020 - 06/14/2020 prevalence['wave_2_incidence'] = prevalence['prev_6/21/20'] - prevalence['prev_6/14/20'] #09/16/2020 - 09/09/2020 prevalence['wave_3_incidence'] = prevalence['prev_9/16/20'] - prevalence['prev_9/9/20'] #12/04/2020 - 11/27/2020 prevalence['wave_4_incidence'] = prevalence['prev_12/4/20'] - prevalence['prev_11/27/20'] #02/11/2021 - 02/04/2021 prevalence['wave_5_incidence'] = prevalence['prev_2/11/21'] - prevalence['prev_2/4/21'] #05/19/2021 - 05/12/2021 prevalence['wave_6_incidence'] = prevalence['prev_5/19/21'] - prevalence['prev_5/12/21']
+
+below we turn these figures into rates based on population
+```{r}
+ZIP_FEATURES <- left_join(ZIP_FEATURES, prevalence, by = "COUNTY_FIPS")
+
+# Loop through the columns of ZIP_FEATURES
+for (col in colnames(ZIP_FEATURES)) {
+  # Check if the column name starts with 'prev_'
+  if (startsWith(col, 'prev_')) {
+    # Extract the date part of the column name
+    date_part <- str_replace(col, 'prev_', '')
+    # Perform the calculation and create a new column
+    ZIP_FEATURES <- ZIP_FEATURES %>%
+      mutate(!!paste0('rate_prev_', date_part) := (get(col) / POPESTIMATE2020) * 1000)
+  }
+}
+
+# Drop the prevalence columns from ZIP_FEATURES
+prev_columns <- setdiff(colnames(prevalence), "COUNTY_FIPS")
+ZIP_FEATURES <- ZIP_FEATURES %>%
+  select(-all_of(prev_columns))
+
+# Count and print the number and percentage of missing values in the 'rate_prev_11/27/20' column
+num_missing_rate_prev <- sum(is.na(ZIP_FEATURES$`prev_11/27/20`))
+perc_missing_rate_prev <- mean(is.na(ZIP_FEATURES$`prev_11/27/20`)) * 100
+
+cat("Number of missing values in rate_prev_11_27_20:", num_missing_rate_prev, "\n")
+cat("Percentage of missing values in rate_prev_11_27_20:", perc_missing_rate_prev, "%\n")
+```
+
+
+Now let's merge ZIP_FEATURES to BICS to get a dataset that matches features of the ZIP code to the respondent
 First, I'll read in the different waves seperately 
 The two files have the same row count but different columns (225 in manual versus 62 in merged)
 ```{r}
@@ -259,6 +717,23 @@ Now let's merge in the ZIP features file
 ```{r}
 ZIP_FEATURES <- fread('/Users/chrissoria/Documents/Research/BICS_Political_Polarization/data/ZIP_Features.csv', colClasses = c(ZIP = "character", CD = "character", COUNTY_FIPS = "character", STATE_FIPS = "character", CONGRESSPERSON_PARTY = "character"))
 ```
+
+```{r}
+unique_occupations <- unique(df$resp_occupation)
+
+print(unique_occupations)
+
+essential_categories <- c("Accommodation or food services", "Admin, support, waste management or remediation services", 
+                          "Agriculture, Forestry, Fishing, and Hunting", "Forestry, fishing, hunting or agriculture support", 
+                          "Manufacturing", "Construction", "Finance or insurance", "Mining", "Transportation or warehousing", 
+                          "Utilities", "Government or Public Policy", "Community/Social Services", 
+                          "Mining, Quarrying, Oil and Gas Extraction", "Transportation", "Warehousing/Logistics", 
+                          "Educational services", "Professional, scientific or technical services", "Health care")
+
+df <- df %>%
+  mutate(essential = ifelse(resp_occupation %in% essential_categories, 1, 0))
+```
+
 getting df ready to merge to ZIP_FEATURES
 merged file questions:
 Why are there duplicates w_gender and gender, for example?
@@ -281,7 +756,7 @@ columns_to_keep <- c('ResponseId','StartDate','resp_yob','resp_sex','resp_hispan
                      'industry','health_insurance','interview_date','wave','agecat','city','covid19_vax','covid19_whynot_vax',
                      'Non_Weighted_Safety_Index','Weighted_Safety_Index','Norm_Masks_Used','educ_group','contact_reduction',
                      'binary_concern','binary_concern_strong','resp_educ','Contacts',
-                     'data_collected_dates','weight_pooled','weight_city','num_cc','strong_concern_inverse')
+                     'data_collected_dates','weight_pooled','weight_city','num_cc','strong_concern_inverse','essential')
 
 df <- df[columns_to_keep]
 
@@ -870,6 +1345,6 @@ rm(dates,weekly_cases)
 ```
 
 ```{r}
-rm(file_type, no_mandates,strict_mandates,less_strict_mandates, unclear_or_unspecified_mandates)
+rm(file_type, no_mandates,strict_mandates,less_strict_mandates, unclear_or_unspecified_mandates, i, dates_formal)
 ```
 

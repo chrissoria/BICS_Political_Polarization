@@ -6,6 +6,10 @@ output: html_document
 ---
 data to be removed
 ```{r}
+library(deSolve)
+```
+
+```{r}
 sf_df <- subset(bics_zip_features, city == "Bay Area")
 pho_df <- subset(bics_zip_features, city == "Phoenix")
 ```
@@ -340,10 +344,10 @@ sir_three_group_pu <- function(c = NA, # average number of contacts per day (spe
 
 ```{r}
 prop_rep = weighted.mean(sf_df$republican, w = sf_df$weight_pooled, na.rm = TRUE)
-print(prop_republican)
+print(prop_rep)
 
 prop_dem = weighted.mean(sf_df$democrat, w = sf_df$weight_pooled, na.rm = TRUE)
-print(prop_republican)
+print(prop_dem)
 
 rep_cc <- sf_df %>%
   filter(republican == 1) %>%
