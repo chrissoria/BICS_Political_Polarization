@@ -473,8 +473,8 @@ ui <- fluidPage(
       numericInput("trans_p", "Transmission Probability:", 0.1, min = 0, max = 1, step = 0.01),
       numericInput("rho", "Recovery Rate (1/Days):", 1/14, min = 0, max = 1, step = 0.01),
       #numericInput("mu", "Death Rate:", 0.01, min = 0, max = 1, step = 0.01),
-      numericInput("h_a", "Proportion of Republican Contact within Group:", 0.5, min = 0, max = 1, step = 0.01),
-      numericInput("h_b", "Proportion of Democrat Contact within Group:", 0.5, min = 0, max = 1, step = 0.01),
+      #numericInput("h_a", "Proportion of Republican Contact within Group:", 0.5, min = 0, max = 1, step = 0.01),
+      #numericInput("h_b", "Proportion of Democrat Contact within Group:", 0.5, min = 0, max = 1, step = 0.01),
       numericInput("kappa", "Infection Rate:", 0.3, min = 0, max = 1, step = 0.01),
       numericInput("phi", "Recovery Rate after Infection:", 0.02, min = 0, max = 1, step = 0.01),
       numericInput("I0_a", "Initial Infected Republicans:", 1, min = 0, max = 100, step = 1),
@@ -515,8 +515,8 @@ server <- function(input, output) {
       trans_p = input$trans_p, 
       rho = input$rho, 
       mu = 0.01, 
-      h_a = input$h_a, # Proportion Republican contact with members of their own group
-      h_b = input$h_b, # Proportion Democrat contact with members of their own group
+      h_a = (((log(input$absolute_polarization) + 1 + input$relative_polarization)) + .00001)/(12),
+      h_b = (((1 / (log(input$absolute_polarization) + 1) - input$relative_polarization)) + .00001)/(12),
       kappa = input$kappa, 
       phi = input$phi, 
       I0_a = input$I0_a, # Initial infected in Republican group
@@ -573,7 +573,7 @@ server <- function(input, output) {
            y = "Hospitalized Individuals",
            x = "Time (days)") +
       scale_y_continuous(labels = scales::comma) +
-      labs(subtitle = paste("Hospitals overwhelmed at day =", crossing_time, "with value =", crossing_value, ", republican daily contact = ", round(rep_cc, digits = 2), ", democrat daily contacts = ",round(dem_cc, digits = 2),", total republican and democrat daily contacts: ", round(rep_cc, digits = 2)+round(dem_cc, digits = 2))) +
+      labs(subtitle = paste("Hospitals overwhelmed at day =", crossing_time, "with value =", crossing_value, ", republican daily contact = ", round(rep_cc, digits = 2), ", democrat daily contacts = ",round(dem_cc, digits = 2),", total republican and democrat daily contacts: ", round(rep_cc, digits = 2)+round(dem_cc, digits = 2), "\nproportion of republican contact with other republicans = ", round(rep_cc/12, digits = 2), "\nproportion of democrat contact with other democrats = ", round(dem_cc/12, digits = 2))) +
       scale_color_manual(values = c("Republicans" = "red", "Democrats" = "blue", "Independents" = "darkgreen", "Total" = "darkgray")) +
       theme_minimal() +
       theme(axis.text = element_text(size = 12), 
@@ -585,29 +585,6 @@ server <- function(input, output) {
 # Run the application 
 shinyApp(ui = ui, server = server)
 ```
-```{r}
-level = 9
-delta = 1  # Adjust this value to increase/decrease the gap
-
-# Original values
-rep_cc = 4 * (log(level) + 1)
-dem_cc = 4 * (1 / (log(level) + 1))
-original_sum = rep_cc + dem_cc
-
-# New values with delta
-rep_cc_new = 4 * (log(level) + 1 + delta)
-dem_cc_new = 4 * (1 / (log(level) + 1) - delta)
-new_sum = rep_cc_new + dem_cc_new
-
-# Print results
-print(paste("Original rep_cc:", rep_cc))
-print(paste("Original dem_cc:", dem_cc))
-print(paste("Original sum:", original_sum))
-print(paste("New rep_cc:", rep_cc_new))
-print(paste("New dem_cc:", dem_cc_new))
-print(paste("New sum:", new_sum))
-```
-
 
 ```{r}
 rm(sf_df, pho_df)

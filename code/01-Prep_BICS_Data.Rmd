@@ -153,10 +153,9 @@ ZIP_FEATURES <- ZIP_FEATURES %>%
     CONGRESSPERSON_PARTY = Party
   )
 
-# Move specified columns to the end
 cols_to_move <- colnames(ZIP_FEATURES)[3:5]
-ZIP_FEATURES <- ZIP_FEATURES %>%
-  select(-all_of(cols_to_move), all_of(cols_to_move))
+other_cols <- colnames(ZIP_FEATURES)[!(colnames(ZIP_FEATURES) %in% cols_to_move)]
+ZIP_FEATURES <- ZIP_FEATURES[, c(other_cols, cols_to_move)]
 
 ZIP_FEATURES
 ```
